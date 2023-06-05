@@ -47,6 +47,19 @@ class Tools:
         return list(set(all_links))
     
     def find_relevant_links_and_titles(self,all_links,keywords,search_title = False):
+        '''
+        Given a list of links and a list of keywords this method will find links/titles that contain
+        keywords
+
+        all_links: list, contains all links you want to parse
+
+        keywords: list, contains all keywords you want to look for
+
+        search_title: bool, leave this set to false in order to save time, but if you want to search
+            titles anyway, set it to true. If set to true, the script will download the html
+            of the page, strip the title from it, and then look for keywords. This is a massive
+            time waste.
+        '''
         name_and_link = []
         keywords_upper = [string.capitalize() for string in keywords]
         for link in all_links:
@@ -76,3 +89,23 @@ class Tools:
                     signal.alarm(0)
         del keywords,keywords_upper,title,link,all_links
         return list(set(name_and_link))
+    
+    def relevant_links(self,url,keywords):
+        '''
+        This method takes a link, strips all links on the page, and finds all links that contain
+        keywords
+
+        url: string, link to website you want to parse
+
+        keywords: list, contains all keywords to look for
+
+        returns: list of links that match
+        '''
+
+        page = urlopen(url).read()
+
+        all_links = self.find_all_links(page)
+
+        name_and_link = list(set(self.find_relevant_links_and_titles(all_links,keywords,search_title=False)))
+
+        return name_and_link
