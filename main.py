@@ -23,15 +23,16 @@ run = False
 
 # Creating timeout error to limit the runtime of a function if needed
 class TimeoutException(Exception): # Creating custom error
-    pass
+   pass
 
 def timeout_handler(): # Creating function to handle error
-    raise TimeoutException
+   raise TimeoutException
     
 signal.signal(signal.SIGALRM, timeout_handler);
 
 class PandasFailedToOpenError(Exception):
-    pass
+   pass
+
 def on_start():
    global run
    run = True
@@ -41,16 +42,16 @@ def on_stop():
    run = False
 
 def autoprocess(data_path,dl_folder):
-    try: 
+   try: 
       data = pd.read_csv(data_path)
       del data
-    except:
+   except:
       filename = data_path.split(sep='/')[-1]
       failed_to_process = open(dl_folder + '/failed_to_process.txt','a')
       e = datetime.now()
       failed_to_process.write(f'{filename} failed to open on {str(e.year) + ", " + str(e.month) + ", " + str(e.day)}\n')
       failed_to_process.close()
-      raise PandasFailedToOpenError
+   raise PandasFailedToOpenError
 
 def main():
    if run:
@@ -143,10 +144,11 @@ end_label.place(relx = 0.3, rely = 0.6,anchor=CENTER)
 end_button = Button(canvas, text="Stop", command=on_stop,padx=6,pady=5,highlightthickness=0)
 end_button.place(relx=0.75,rely=0.6,anchor=CENTER)
 
-info_label = Text(canvas,wrap=WORD,width=30,height=5,padx=6,pady=5,highlightthickness=0)
+info_label = Text(canvas,wrap=WORD,width=45,height=5,padx=6,pady=5,highlightthickness=0)
 info_label.tag_configure('center',justify='center')  
 info_label.insert('1.0','''This rudimentary GUI controls the script. 
-New buttons and features may be added later if I can make it work''')
+New buttons and features may be added later if I can make it work. Also, dont
+resize the page. Make sure to hit stop before you close the window.''')
 info_label.tag_add('center',1.0,'end')
 info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
 
