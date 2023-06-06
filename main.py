@@ -37,36 +37,40 @@ def on_stop():
    run = False
 
 def main():
-    if run == True:
-        # Check if data folder exists
-        data_folder_path = sys.path[0] + '/Data'
-        if not os.path.isdir(data_folder_path):
-            print('Directory "Data" does not exists in current directory. Creating Directory.')
-            os.mkdir(path=data_folder_path)
+   if run:
+      # Check if data folder exists
+      data_folder_path = sys.path[0] + '/Data'
+      if not os.path.isdir(data_folder_path):
+         print('Directory "Data" does not exists in current directory. Creating Directory.')
+         os.mkdir(path=data_folder_path)
 
-        # Check if websites.csv exists
-        websites_csv_path = sys.path[0] + '/websites.csv'
-        if not os.path.isfile(websites_csv_path):
-            sys.exit('Necessary file "websites.csv" does not exsist in current directory. Exiting Program.')
+      # Check if websites.csv exists
+      websites_csv_path = sys.path[0] + '/websites.csv'
+      if not os.path.isfile(websites_csv_path):
+         sys.exit('Necessary file "websites.csv" does not exsist in current directory. Exiting Program.')
 
-        # Read in csv with websites
-        try:
-            df = pd.read_csv(websites_csv_path,header=0)
-            df = df.reset_index(drop=True)
-        except:
-            sys.exit('Failed to open websites.csv. Exiting Program.')
+      # 1. Read in csv with websites
+      try:
+         df = pd.read_csv(websites_csv_path,header=0)
+         df = df.reset_index(drop=True)
+      except:
+         sys.exit('Failed to open websites.csv. Exiting Program.')
 
-        for idx,info in df.iterrows():
-            print(f'looped {idx+1} times')
-            # Iterate over all entries to check if enough time has passed
-            # if data was updated, download data(?) and then enter new system time
-            continue
-        
-        # 3. Check to see if user asked for entry to be deleted
+      for idx,info in df.iterrows():
+         pass
+         # 2: Iterate over all entries to check if enough time has passed
+         # 3: If data was updated, update the time on the websites csv to current time
+         # 4: if data was updated, download data(?) into folder named after the title of the website
+         # 5: attempt to process data, if that fails, make some sort of identifier, maybe a text file in the same directory
+         #    with the file name and date that it failed to process
+         continue
+      
+      # 3. Check to see if user asked for entry to be deleted
 
-        # 4. Overwrite file 
-        df.to_csv('websites.csv',index=False)
-    window.after(0, main)
+      # 4. Overwrite file 
+      df.to_csv('websites.csv',index=False)
+      print('looped')
+   window.after(1, main)
 
 start_label = Text(window,wrap=WORD,width=30,height=2,padx=1,pady=1)
 start_label.tag_configure('center',justify='center')  
