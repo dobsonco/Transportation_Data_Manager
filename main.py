@@ -150,9 +150,12 @@ New buttons and features may be added later if I can make it work''')
 info_label.tag_add('center',1.0,'end')
 info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
 
-resized_img = Image.open(sys.path[0] + '/Resources/UT_logo.png').resize((130,100),Image.LANCZOS);
-img = ImageTk.PhotoImage(resized_img)
-canvas.create_image(350,260,image=img)
+try:
+   resized_img = Image.open(sys.path[0] + '/Resources/UT_logo.png').resize((150,120),Image.LANCZOS);
+   img = ImageTk.PhotoImage(resized_img)
+   canvas.create_image(340,260,image=img)
+except:
+   pass
 
 who_made_this = Text(canvas,wrap=WORD,width=35,height=3,padx=6,pady=5,highlightthickness=0)
 who_made_this.tag_configure('center',justify='center')  
