@@ -10,6 +10,7 @@ import DataframeShortcuts
 DS = DataframeShortcuts.Shortcuts()
 from tkinter import *
 from tkinter import ttk
+from PIL import ImageTk,Image
 import os
 import sys
 import shutil
@@ -17,10 +18,7 @@ import shutil
 global temp_folder
 temp_folder = sys.path[0] + '/Data/temp'
 
-window = Tk()
-window.title('Transportation Data Manager')
-window.geometry('400x400')
-
+global run
 run = False
 
 # Creating timeout error to limit the runtime of a function if needed
@@ -80,7 +78,7 @@ def main():
          # 2: Iterate over all entries to check if enough time has passed
 
          if True: # Replace with -> (round(time.time()) - info[2] >= 7.884e+6) This is not ready to be tested yet
-            df.iloc[idx] = [info[0],info[1],round(time.time())]
+            df.iloc[idx] = [info[0],info[1],int(time.time())]
             
             dl_folder = data_folder_path + '/' + info[0]
             if os.path.isdir(dl_folder):
@@ -104,7 +102,7 @@ def main():
                   continue      
             
             # Make sure nothing is left in temp, this is just a failsafe
-            # move should delete the file that got moved
+            # move should delete the file that got moved from its original directory
             for root, dirs, files in os.walk('/path/to/folder'):
                for f in files:
                   os.unlink(os.path.join(root, f))
@@ -117,23 +115,51 @@ def main():
       
    window.after(1, main)
 
-start_label = Text(window,wrap=WORD,width=30,height=2,padx=1,pady=1)
+window = Tk()
+window.title('Transportation Data Manager')
+window.iconbitmap(sys.path[0] + '/Resources/car1.ico')
+
+frame = Frame(window)
+frame.pack()
+
+canvas = Canvas(frame, width=400, height=300, bg='#D3D3D3')
+canvas.pack()
+
+start_label = Text(canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
 start_label.tag_configure('center',justify='center')  
 start_label.insert('1.0','When pressed, this button will start the loop')
 start_label.tag_add('center',1.0,'end')
-start_label.place(relx = 0.3, rely = 0.2,anchor=CENTER)
+start_label.place(relx = 0.3, rely = 0.4,anchor=CENTER)
 
-start_button = ttk.Button(window, text="Start", command=on_start)
-start_button.place(relx=0.7, rely=0.2, anchor=CENTER)
+start_button = Button(canvas, text="Start", command=on_start, padx=6,pady=5,highlightthickness=0)
+start_button.place(relx=0.75, rely=0.4, anchor=CENTER)
 
-
-end_label = Text(window,wrap=WORD,width=30,height=2,padx=1,pady=1)
+end_label = Text(canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
 end_label.tag_configure('center',justify='center')  
 end_label.insert('1.0','When pressed, this button will end the loop')
 end_label.tag_add('center',1.0,'end')
-end_label.place(relx = 0.3, rely = 0.8,anchor=CENTER)
+end_label.place(relx = 0.3, rely = 0.6,anchor=CENTER)
 
-end_button = ttk.Button(window, text="Stop", command=on_stop)
-end_button.place(relx=0.7,rely=0.8,anchor=CENTER)
+end_button = Button(canvas, text="Stop", command=on_stop,padx=6,pady=5,highlightthickness=0)
+end_button.place(relx=0.75,rely=0.6,anchor=CENTER)
+
+info_label = Text(canvas,wrap=WORD,width=30,height=5,padx=6,pady=5,highlightthickness=0)
+info_label.tag_configure('center',justify='center')  
+info_label.insert('1.0','''This rudimentary GUI controls the script. 
+New buttons and features may be added later if I can make it work''')
+info_label.tag_add('center',1.0,'end')
+info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
+
+resized_img = Image.open(sys.path[0] + '/Resources/UT_logo.png').resize((130,100),Image.LANCZOS);
+img = ImageTk.PhotoImage(resized_img)
+canvas.create_image(350,260,image=img)
+
+who_made_this = Text(canvas,wrap=WORD,width=35,height=3,padx=6,pady=5,highlightthickness=0)
+who_made_this.tag_configure('center',justify='center')  
+who_made_this.insert('1.0','''This program was made by Collin Dobson for the UTORII SMaRT internship''')
+who_made_this.tag_add('center',1.0,'end')
+who_made_this.place(relx=0.35, rely = 0.85,anchor=CENTER)
 
 window.after(1, main)
+
+window.mainloop()
