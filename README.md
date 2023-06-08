@@ -2,7 +2,7 @@
 The purpose of this repository is to be a place to store the code for my program in case of my laptop dying and to also act as an explanation as to what everything does.
 
 ## Who wrote this code?:
-I, that being Collin Dobson wrote this. This is my first shot at making a GUI/app, which will hopefull justify any gripes you may have with my code. 
+I, that being Collin Dobson wrote this. This is my first shot at making a GUI/app, which will hopefully justify any gripes you may have with my code. 
 
 ## What is the purpose?:
 The purpose is to maintain an active/up to date catalog of data from a list of databases. You can pretty much just turn this program on and leave it running on a machine in the corner as long as you want. The program will check to see if enough time has past for each link. If that is the case, then the program will check the site to see if new data has been uploaded. If it has, then the program will download the file to a temp folder in Data, and then it will move it to a folder with the name of the website it came from. 

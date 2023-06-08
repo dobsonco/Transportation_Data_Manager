@@ -1,7 +1,13 @@
-title,url,last_checked
-Data – CHCRPA,https://chcrpa.org/data-and-analyses/data/,1686084766
-Transportation Planning Organization – CHCRPA,https://chcrpa.org/transportation-planning-organization/,1686084766
-Home | CARTA | Chattanooga’s Ride,http://www.carta-bus.org/,1686084766
-Employment Opportunities – CHCRPA,https://chcrpa.org/employment-opportunities/,1686084766
-ArcGIS Web Application,https://pwgis.chattanooga.gov/portal/apps/webappviewer/index.html?id=2b066c4f02a14f288f0134a02eeca91e,1686084766
-Functional Classification Maps,https://www.tn.gov/tdot/driver-how-do-i/look-at-or-order-state-maps/maps/annual-average-daily-traffic-maps1.html,1686084766
+title,url,type,last_checked
+Regional Transportation Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/kaau-hhd5/rows.csv?accessType=DOWNLOAD,csv,1686249131
+Bike Racks (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/yjju-hypq/rows.csv?accessType=DOWNLOAD,csv,1686249131
+Metropolitan Transit Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/22t2-bdkj/rows.csv?accessType=DOWNLOAD,csv,1686249131
+Regional Transportation Authority Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/p886-fnbd/rows.csv?accessType=DOWNLOAD,csv,1686249131
+Sidewalk Inventory for ADA Self-Assessment | Nashville Open Data Portal,https://data.nashville.gov/api/views/vpxc-b5te/rows.csv?accessType=DOWNLOAD,csv,1686249131
+WeGo Transit and Middle TN RTA Stops and Routes (GTFS) | Nashville Open Data Portal,https://data.nashville.gov/download/2246-gtr4/application%2Fzip,zip,1686249131
+WeGo Transit Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/vfe9-k7vc/rows.csv?accessType=DOWNLOAD,csv,1686249131
+MATA Transit map,https://www.matatransit.com/assets/2/6/MATA_November_2021_System_Map.pdf,pdf,1686249131
+Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/55g4-zatm/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1686249131
+Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/v868-x5mt/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1686249131
+Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/fpgh-69ti/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1686249131
+Jams by Month | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/uuky-tt6g/rows.csv?accessType=DOWNLOAD,csv,1686249131

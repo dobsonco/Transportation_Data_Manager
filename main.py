@@ -14,25 +14,20 @@ from PIL import ImageTk,Image
 import os
 import sys
 import shutil
+import matplotlib.pyplot as plt
+import numpy as np
 
 global temp_folder
 temp_folder = sys.path[0] + '/Data/temp'
 
-global run
-run = False
-
 # Creating timeout error to limit the runtime of a function if needed
 class TimeoutException(Exception): # Creating custom error
-   pass
+    pass
 
 def timeout_handler(): # Creating function to handle error
-   raise TimeoutException
+    raise TimeoutException
     
-signal.signal(signal.SIGALRM, timeout_handler);
-
-class PandasFailedToOpenError(Exception):
-   pass
-
+signal.signal(signal.SIGABRT, timeout_handler);
 def on_start():
    global run
    run = True
@@ -42,16 +37,30 @@ def on_stop():
    run = False
 
 def autoprocess(data_path,dl_folder):
-   try: 
-      data = pd.read_csv(data_path)
-      del data
-   except:
-      filename = data_path.split(sep='/')[-1]
-      failed_to_process = open(dl_folder + '/failed_to_process.txt','a')
-      e = datetime.now()
-      failed_to_process.write(f'{filename} failed to open on {str(e.year) + ", " + str(e.month) + ", " + str(e.day)}\n')
-      failed_to_process.close()
-   raise PandasFailedToOpenError
+    try:
+        data = pd.read_csv(data_path)
+    except:
+        return
+
+    failed = [False for col in data]
+    for idx,col in enumerate(data):
+        try:
+            filename = data_path.split(sep='/')[-1]
+            fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
+            ax.hist(np.array(data[col]))
+            fig.savefig(dl_folder + '/' + filename + str(idx) + '.png')
+            plt.close(fig)
+            del fig,ax
+        except:
+            failed[idx] = True
+            continue
+
+    if all(failed):
+        filename = data_path.split(sep='/')[-1]
+        failed_to_process = open(dl_folder + '/failed_to_process.txt','a')
+        e = datetime.now()
+        failed_to_process.write(f'{filename} failed to open on {str(e.year) + ", " + str(e.month) + ", " + str(e.day)}\n')
+        failed_to_process.close()
 
 def main():
    if run:
@@ -87,7 +96,7 @@ def main():
                   # download file in temp folder
                   filename = next(os.walk(temp_folder), (None, None, []))[2][0]
                   filepath = dl_folder + '/' + filename
-                  shutil.move(temp_folder + filename, filepath)
+                  shutil.move(temp_folder + '/' + filename, filepath)
                   autoprocess(filepath,dl_folder)
                except:
                   continue
@@ -97,7 +106,7 @@ def main():
                   os.mkdir(dl_folder)
                   filename = next(os.walk(temp_folder), (None, None, []))[2][0]
                   filepath = dl_folder + '/' + filename
-                  shutil.move(temp_folder + filename, filepath)
+                  shutil.move(temp_folder + '/' + filename, filepath)
                   autoprocess(filepath,dl_folder)
                except:
                   continue      
@@ -115,7 +124,6 @@ def main():
       print('looped')
       
    window.after(1, main)
-
 window = Tk()
 window.title('Transportation Data Manager')
 window.iconbitmap(sys.path[0] + '/Resources/car1.ico')
@@ -125,6 +133,9 @@ frame.pack()
 
 canvas = Canvas(frame, width=400, height=300, bg='#D3D3D3')
 canvas.pack()
+
+global run
+run = False
 
 start_label = Text(canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
 start_label.tag_configure('center',justify='center')  
@@ -144,20 +155,16 @@ end_label.place(relx = 0.3, rely = 0.6,anchor=CENTER)
 end_button = Button(canvas, text="Stop", command=on_stop,padx=6,pady=5,highlightthickness=0)
 end_button.place(relx=0.75,rely=0.6,anchor=CENTER)
 
-info_label = Text(canvas,wrap=WORD,width=45,height=5,padx=6,pady=5,highlightthickness=0)
+info_label = Text(canvas,wrap=WORD,width=30,height=5,padx=6,pady=5,highlightthickness=0)
 info_label.tag_configure('center',justify='center')  
 info_label.insert('1.0','''This rudimentary GUI controls the script. 
-New buttons and features may be added later if I can make it work. Also, dont
-resize the page. Make sure to hit stop before you close the window.''')
+New buttons and features may be added later if I can make it work''')
 info_label.tag_add('center',1.0,'end')
 info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
 
-try:
-   resized_img = Image.open(sys.path[0] + '/Resources/UT_logo.png').resize((150,120),Image.LANCZOS);
-   img = ImageTk.PhotoImage(resized_img)
-   canvas.create_image(340,260,image=img)
-except:
-   pass
+resized_img = Image.open(sys.path[0] + '/Resources/UT_logo.png').resize((130,100),Image.LANCZOS);
+img = ImageTk.PhotoImage(resized_img)
+canvas.create_image(350,260,image=img)
 
 who_made_this = Text(canvas,wrap=WORD,width=35,height=3,padx=6,pady=5,highlightthickness=0)
 who_made_this.tag_configure('center',justify='center')  

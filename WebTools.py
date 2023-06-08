@@ -10,7 +10,7 @@ def timeout_handler(): # Creating function to handle error
     print('Reached maximum allotted time')
     raise TimeoutException
     
-signal.signal(signal.SIGALRM, timeout_handler);
+signal.signal(signal.SIGABRT, timeout_handler);
 
 class Tools:
 
@@ -87,7 +87,7 @@ class Tools:
                     continue
                 else:
                     signal.alarm(0)
-        del keywords,keywords_upper,title,link,all_links
+        del keywords,keywords_upper,link,all_links
         return list(set(name_and_link))
     
     def relevant_links(self,url,keywords):
