@@ -10,7 +10,7 @@ def timeout_handler(): # Creating function to handle error
     print('Reached maximum allotted time')
     raise TimeoutException
     
-signal.signal(signal.SIGABRT, timeout_handler);
+signal.signal(signal.SIGALRM, timeout_handler);
 
 class Tools:
 
