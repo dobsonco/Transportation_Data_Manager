@@ -1,13 +1,12 @@
 title,url,type,last_checked
-Regional Transportation Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/kaau-hhd5/rows.csv?accessType=DOWNLOAD,csv,1686335252
-Bike Racks (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/yjju-hypq/rows.csv?accessType=DOWNLOAD,csv,1686335253
-Metropolitan Transit Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/22t2-bdkj/rows.csv?accessType=DOWNLOAD,csv,1686335255
-Regional Transportation Authority Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/p886-fnbd/rows.csv?accessType=DOWNLOAD,csv,1686335256
-Sidewalk Inventory for ADA Self-Assessment | Nashville Open Data Portal,https://data.nashville.gov/api/views/vpxc-b5te/rows.csv?accessType=DOWNLOAD,csv,1686335256
-WeGo Transit and Middle TN RTA Stops and Routes (GTFS) | Nashville Open Data Portal,https://data.nashville.gov/download/2246-gtr4/application%2Fzip,zip,1686335261
-WeGo Transit Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/vfe9-k7vc/rows.csv?accessType=DOWNLOAD,csv,1686335263
-MATA Transit map,https://www.matatransit.com/assets/2/6/MATA_November_2021_System_Map.pdf,pdf,1686335263
-Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/55g4-zatm/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1686335264
-Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/v868-x5mt/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1686335267
-Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/fpgh-69ti/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1686335268
-Jams by Month | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/uuky-tt6g/rows.csv?accessType=DOWNLOAD,csv,1686336688
+Regional Transportation Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/kaau-hhd5/rows.csv?accessType=DOWNLOAD,csv,1686601545
+Bike Racks (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/yjju-hypq/rows.csv?accessType=DOWNLOAD,csv,1686601546
+Metropolitan Transit Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/22t2-bdkj/rows.csv?accessType=DOWNLOAD,csv,1686601546
+Regional Transportation Authority Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/p886-fnbd/rows.csv?accessType=DOWNLOAD,csv,1686601547
+Sidewalk Inventory for ADA Self-Assessment | Nashville Open Data Portal,https://data.nashville.gov/api/views/vpxc-b5te/rows.csv?accessType=DOWNLOAD,csv,1686601548
+WeGo Transit and Middle TN RTA Stops and Routes (GTFS) | Nashville Open Data Portal,https://data.nashville.gov/download/2246-gtr4/application%2Fzip,zip,1686601555
+WeGo Transit Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/vfe9-k7vc/rows.csv?accessType=DOWNLOAD,csv,1686601556
+MATA Transit map,https://www.matatransit.com/assets/2/6/MATA_November_2021_System_Map.pdf,pdf,1686601557
+Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/55g4-zatm/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1686601558
+Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/v868-x5mt/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1686601559
+Jams by Month | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/uuky-tt6g/rows.csv?accessType=DOWNLOAD,csv,1686601560

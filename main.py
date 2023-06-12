@@ -184,14 +184,14 @@ def main():
             dl_folder = data_folder_path + '/' + info[0]
             if os.path.isdir(dl_folder):
                try:
-                  filename,filepath = download_url(info[1],dl_folder,type=info[2])
+                  filename,filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
                   autoprocess(filepath,dl_folder)
                except:
                   pass
             else:
                try:
                   os.mkdir(dl_folder)
-                  filename,filepath = download_url(info[1],dl_folder,type=info[2])
+                  filename,filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
                   autoprocess(filepath,dl_folder)
                except:
                   pass      
