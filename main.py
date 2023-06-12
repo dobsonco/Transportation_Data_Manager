@@ -23,15 +23,18 @@ import shutil
 global temp_folder
 temp_folder = sys.path[0] + '/Data/temp'
 
+global all_links
+all_links = []
+
 # Creating timeout error to limit the runtime of a function if needed
 class TimeoutException(Exception): # Creating custom error
     pass
 
 def timeout_handler(): # Creating function to handle error
-    print('Reached maximum allotted time')
     raise TimeoutException
     
 signal.signal(signal.SIGALRM, timeout_handler);
+
 def on_start():
    global run
    run = True
@@ -75,9 +78,9 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
 
    return name,filepath[0:-1]
 
-def clear_temp(dir):
-   for filename in os.listdir(temp_folder):
-      file_path = os.path.join(temp_folder, filename)
+def clear_temp(dir=temp_folder):
+   for filename in os.listdir(dir):
+      file_path = os.path.join(dir, filename)
       try:
          if os.path.isfile(file_path) or os.path.islink(file_path):
                   os.unlink(file_path)
@@ -176,7 +179,7 @@ def autoprocess(data_path,dl_folder):
       return
    return
 
-def is_same_file(new_file_path,dl_folder):
+def is_same_file(new_file_path=temp_folder,dl_folder=sys.path[0],url_new=' ',type='csv'):
     '''
     new_file_path: string, this is the path to the file that was downloaded into the temp folder
 
@@ -186,15 +189,29 @@ def is_same_file(new_file_path,dl_folder):
     '''
     dl_folder = dl_folder + '/'
     filenames = next(os.walk(dl_folder), (None, None, []))[2]
-    print(filenames)
     for name in filenames:
         filepath = dl_folder + name
-        print(filepath)
-
         if filecmp.cmp(f1=filepath,f2=new_file_path,shallow=False):
             return new_file_path,filepath
-        
-    clear_temp(temp_folder)
+
+    # ok so this whole if statement below here is a workaround that is necessary
+    # i can't believe this actually works
+    # basically if we have undownloaded data with the same title we run into a problem 
+    # where it will never download because the folder already exists. So to fix this
+    # we create a global list of links that have already been seen before so that when
+    # it inevitably gets here, it will check to see if the link has been processed,
+    # and if it hasn't, it will create an empty file in the place we want to download it
+    # it then returns the path to the file in /temp and the path to the place we want it to go
+    # taking advantage of shutil.move
+    if (url_new not in all_links) and (os.path.isdir(dl_folder)):
+        files_in_directory = len(next(os.walk(dl_folder), (None, None, []))[2])
+        name = dl_folder.split(sep='/')[-2] + '-' + str(files_in_directory) + '.' + type
+        workaround_path = dl_folder + name
+        workaround_file = open(workaround_path,'w')
+        workaround_file.close()
+        return new_file_path,workaround_path
+
+    clear_temp()
 
     raise Exception(f'No files in {dl_folder} match {new_file_path}')
 
@@ -226,29 +243,32 @@ def main():
 
          # 2: Iterate over all entries to check if enough time has passed
 
-         if ((round(time.time(),0) - info[3]) >= 100):
+         if ((round(time.time(),0) - info[3]) >= 50):
             df.iloc[idx] = [info[0],info[1],info[2],int(time.time())]
             
-            dl_folder = data_folder_path + '/' + info[0]
+            dl_folder = data_folder_path + '/' + info[0]            
             if os.path.isdir(dl_folder):
                try:
                   filename,filepath = download_url(url=info[1],save_path=temp_folder,type=info[2])
-                  temp_filepath,old_filepath = is_same_file(new_file_path=filepath,dl_folder=dl_folder)
+                  temp_filepath,old_filepath = is_same_file(new_file_path=filepath,dl_folder=dl_folder,url_new=info[1],type=info[2])
                   shutil.move(src=temp_filepath,dst=old_filepath)
-                  clear_temp(temp_folder)
+                  clear_temp()
                   name = old_filepath.split(sep='/')[-1]
                   data_folder = dl_folder + '/' + name.split(sep='.')[0]
                   shutil.rmtree(data_folder)
                   autoprocess(filepath,dl_folder)
                except:
                   pass
+
             else:
                try:
                   os.mkdir(dl_folder)
                   filename,filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
                   autoprocess(filepath,dl_folder)
                except:
-                  pass      
+                  pass   
+      
+         all_links.append(info[1])   
       
       # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
 
