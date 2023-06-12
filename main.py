@@ -10,7 +10,6 @@ Tools = WebTools.Tools()
 import DataframeShortcuts
 DS = DataframeShortcuts.Shortcuts()
 from tkinter import *
-from tkinter import ttk
 from PIL import ImageTk,Image
 import os
 import sys
@@ -18,6 +17,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from zipfile import ZipFile
 import glob
+import filecmp
+import shutil
+
+global temp_folder
+temp_folder = sys.path[0] + '/Data/temp'
 
 # Creating timeout error to limit the runtime of a function if needed
 class TimeoutException(Exception): # Creating custom error
@@ -36,6 +40,13 @@ def on_stop():
    global run
    run = False
 
+def connected_to_internet(url='http://www.google.com/', timeout=5):
+    try:
+        _ = requests.head(url, timeout=timeout)
+        return True
+    except requests.ConnectionError:
+      return False
+
 def download_url(url, save_path, chunk_size=1024, type='csv'):
    '''
    Save path is just the folder you want to download it in.
@@ -46,7 +57,7 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
    return the path to the folder along with the name of the folder
    '''
    files_in_directory = len(next(os.walk(save_path), (None, None, []))[2])
-   name = save_path.split(sep='/')[-1] + '-' +str(files_in_directory) + '.' + type
+   name = save_path.split(sep='/')[-1] + '-' + str(files_in_directory) + '.' + type
    filepath = save_path + '/' + name + '/'
 
    r = requests.get(url, stream=True)
@@ -63,6 +74,17 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
       name = filepath.split(sep='/')[-2]
 
    return name,filepath[0:-1]
+
+def clear_temp(dir):
+   for filename in os.listdir(temp_folder):
+      file_path = os.path.join(temp_folder, filename)
+      try:
+         if os.path.isfile(file_path) or os.path.islink(file_path):
+                  os.unlink(file_path)
+         elif os.path.isdir(file_path):
+                  shutil.rmtree(file_path)
+      except:
+         pass
 
 def autoprocess(data_path,dl_folder):
    try:
@@ -154,13 +176,39 @@ def autoprocess(data_path,dl_folder):
       return
    return
 
+def is_same_file(new_file_path,dl_folder):
+    '''
+    new_file_path: string, this is the path to the file that was downloaded into the temp folder
+
+    dl_folder: string, this is the path to the folder where the old data is
+
+    returns: Path to file in temp folder and path to file in data folder to be replaced
+    '''
+    dl_folder = dl_folder + '/'
+    filenames = next(os.walk(dl_folder), (None, None, []))[2]
+    print(filenames)
+    for name in filenames:
+        filepath = dl_folder + name
+        print(filepath)
+
+        if filecmp.cmp(f1=filepath,f2=new_file_path,shallow=False):
+            return new_file_path,filepath
+        
+    clear_temp(temp_folder)
+
+    raise Exception(f'No files in {dl_folder} match {new_file_path}')
+
 def main():
    if run:
+      if not connected_to_internet():
+         return
+
       # Check if data folder exists
       data_folder_path = sys.path[0] + '/Data'
       if not os.path.isdir(data_folder_path):
          print('Directory "Data" does not exist in current directory. Creating Directory.')
          os.mkdir(path=data_folder_path)
+         os.mkdir(path=temp_folder)
 
       # Check if websites.csv exists
       websites_csv_path = sys.path[0] + '/websites.csv'
@@ -184,7 +232,13 @@ def main():
             dl_folder = data_folder_path + '/' + info[0]
             if os.path.isdir(dl_folder):
                try:
-                  filename,filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
+                  filename,filepath = download_url(url=info[1],save_path=temp_folder,type=info[2])
+                  temp_filepath,old_filepath = is_same_file(new_file_path=filepath,dl_folder=dl_folder)
+                  shutil.move(src=temp_filepath,dst=old_filepath)
+                  clear_temp(temp_folder)
+                  name = old_filepath.split(sep='/')[-1]
+                  data_folder = dl_folder + '/' + name.split(sep='.')[0]
+                  shutil.rmtree(data_folder)
                   autoprocess(filepath,dl_folder)
                except:
                   pass
@@ -200,9 +254,10 @@ def main():
 
       # 4. Overwrite file 
       df.to_csv(sys.path[0] + '/websites.csv',index=False)
-      print('looped')
+      #print('looped')
       
    window.after(1, main)
+
 window = Tk()
 window.title('Transportation Data Manager')
 window.iconbitmap(sys.path[0] + '/Resources/car2.ico')
