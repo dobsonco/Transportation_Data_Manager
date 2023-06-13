@@ -5,10 +5,6 @@ import signal
 import pandas as pd
 import time
 from datetime import datetime
-import WebTools
-Tools = WebTools.Tools()
-import DataframeShortcuts
-DS = DataframeShortcuts.Shortcuts()
 from tkinter import *
 from PIL import ImageTk,Image
 import os
@@ -23,10 +19,6 @@ import shutil
 global temp_folder
 temp_folder = sys.path[0] + '/Data/temp'
 
-global all_links
-all_links = []
-
-# Creating timeout error to limit the runtime of a function if needed
 class TimeoutException(Exception): # Creating custom error
     pass
 
@@ -34,6 +26,142 @@ def timeout_handler(): # Creating function to handle error
     raise TimeoutException
     
 signal.signal(signal.SIGALRM, timeout_handler);
+
+def get_title(url):
+    '''
+    This function reads the html and finds the title, returning it as a string
+    '''
+    if (url == None) or ('http' not in url):
+        raise ValueError(f'Not a useable url: "{url}"')
+    try:
+        response = urlopen(url)
+        soup = BeautifulSoup(response, 'html.parser')
+        title = soup.title.get_text()
+        del url,soup,response
+        return title
+    except:
+        raise ValueError(f'Not a useable url: "{url}"')
+    
+def find_all_links(page):
+    '''
+    Finds all links on page, this is a WIP as it doesn't find all links
+    '''
+    soup = BeautifulSoup(page,features="lxml")
+    all_links = []
+    for line in soup.find_all('a'):
+        line = line.get('href')
+        try:
+            if ('http' not in line):
+                continue
+        except:
+            continue
+        all_links.append(line)
+    del soup,line,page
+    return list(set(all_links))
+
+def find_relevant_links_and_titles(all_links,keywords,search_title = False):
+    '''
+    Given a list of links and a list of keywords this method will find links/titles that contain
+    keywords
+
+    all_links: list, contains all links you want to parse
+
+    keywords: list, contains all keywords you want to look for
+
+    search_title: bool, leave this set to false in order to save time, but if you want to search
+        titles anyway, set it to true. If set to true, the script will download the html
+        of the page, strip the title from it, and then look for keywords. This is a massive
+        time waste.
+    '''
+    name_and_link = []
+    keywords_upper = [string.capitalize() for string in keywords]
+    for link in all_links:
+        signal.alarm(5)
+        if search_title:
+            try:
+                title = get_title(link).lower()
+                if any(substring in title for substring in keywords):
+                    name_and_link.append((title,link)) 
+                else:
+                    pass
+            except:
+                continue
+            else: 
+                signal.alarm(0)
+        else:
+            try:
+                link = link.lower()
+                if any(substring in link for substring in keywords):
+                    title = get_title(link)
+                    name_and_link.append((title,link))
+                else:              
+                    pass
+            except:
+                continue
+            else:
+                signal.alarm(0)
+    del keywords,keywords_upper,link,all_links
+    return list(set(name_and_link))
+
+def relevant_links(url,keywords):
+    '''
+    This method takes a link, strips all links on the page, and finds all links that contain
+    keywords
+
+    url: string, link to website you want to parse
+
+    keywords: list, contains all keywords to look for
+
+    returns: list of links that match
+    '''
+
+    page = urlopen(url).read()
+
+    all_links = find_all_links(page)
+
+    name_and_link = list(set(find_relevant_links_and_titles(all_links,keywords,search_title=False)))
+
+    return name_and_link
+
+def add_to_dataframe(df,name_link_type):
+    '''
+    This method can be used to add/save websites to the website csv, returns dataframe with new 
+    entries added to end of frame.
+
+    df: This is the dataframe you want to add the entries to.
+
+    name_link_type: This is an array that contains tuples with title of a website in the first position
+    the link in the second position, and the type of each dataset. 
+    Should Look like this -> 
+    '''
+    new_df = df.copy()
+    del df
+    for tup in name_link_type:
+        new_df.loc[len(new_df.index)] = [tup[0], tup[1], tup[2], round(time.time()), "empty"]
+
+    return new_df
+
+def remove_entry(df,idx,save_immediately=False):
+    '''
+    This method deletes an entry by index, saves changes immediately depending on you choice, and then returns the new dataframe
+    If save_immediately is set to false, then if the program is unable to reach then end of the main loop, the change will not be saved,
+    
+
+    df: Dataframe you are working with
+
+    idx: integer, index of the row/entry you want deleted
+
+    returns: New dataframe with entry removed
+    '''
+    new_df = df.copy()
+    del df
+
+    new_df = new_df.drop(idx).reset_index(drop=True)
+
+    if save_immediately:
+        new_df.to_csv('websites.csv',index=False)
+
+    return new_df
 
 def on_start():
    global run
@@ -61,7 +189,7 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
    '''
    files_in_directory = len(next(os.walk(save_path), (None, None, []))[2])
    name = save_path.split(sep='/')[-1] + '-' + str(files_in_directory) + '.' + type
-   filepath = save_path + '/' + name + '/'
+   filepath = save_path + '/' + name
 
    r = requests.get(url, stream=True)
    with open(save_path + '/' + name, 'wb') as fd:
@@ -72,13 +200,18 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
       with ZipFile(save_path + '/' + name, 'r') as zObject:  
          zObject.extractall(path=save_path + '/')
          zObject.close()
-      os.unlink(filepath)
+         os.unlink(filepath)
       filepath = max(glob.glob(os.path.join(save_path, '*/')), key=os.path.getmtime)
       name = filepath.split(sep='/')[-2]
 
-   return name,filepath[0:-1]
+      return filepath
+
+   return filepath
 
 def clear_temp(dir=temp_folder):
+   '''
+   Clears all files and directories from temp folder
+   '''
    for filename in os.listdir(dir):
       file_path = os.path.join(dir, filename)
       try:
@@ -88,7 +221,6 @@ def clear_temp(dir=temp_folder):
                   shutil.rmtree(file_path)
       except:
          pass
-
 def autoprocess(data_path,dl_folder):
    try:
       data = pd.read_csv(data_path,low_memory=False)
@@ -106,7 +238,6 @@ def autoprocess(data_path,dl_folder):
       except:
          return
 
-   failed1 = [False for idx,col in enumerate(data) if data.dtypes[idx] != 'object']
    filename = data_path.split(sep='/')[-1].split(sep='.')[0]
    data_folder = dl_folder + '/' + filename.split(sep='.')[0] + '_Data'
    if not os.path.isdir(data_folder):
@@ -114,8 +245,9 @@ def autoprocess(data_path,dl_folder):
       os.mkdir(data_folder + '/Histograms')
       os.mkdir(data_folder + '/Plots')
 
+   failed1 = [False for idx,col in enumerate(data) if (data.dtypes[idx] != 'object') and (data.dtypes[idx] != 'bool')]
    for idx,col in enumerate(data):
-      if data.dtypes[idx] != 'object':
+      if (data.dtypes[idx] != 'object') and (data.dtypes[idx] != 'bool'):
          signal.alarm(5)
          try:            
             fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
@@ -134,9 +266,9 @@ def autoprocess(data_path,dl_folder):
          else:
             signal.alarm(0)
    
-   failed2 = [False for idx,col in enumerate(data) if data.dtypes[idx] != 'object']
+   failed2 = [False for idx,col in enumerate(data) if (data.dtypes[idx] != 'object') and (data.dtypes[idx] != 'bool')]
    for idx,col in enumerate(data):
-      if data.dtypes[idx] != 'object':
+      if (data.dtypes[idx] != 'object') and (data.dtypes[idx] != 'bool'):
          signal.alarm(5)
          try:            
             fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
@@ -179,42 +311,6 @@ def autoprocess(data_path,dl_folder):
       return
    return
 
-def is_same_file(new_file_path=temp_folder,dl_folder=sys.path[0],url_new=' ',type='csv'):
-    '''
-    new_file_path: string, this is the path to the file that was downloaded into the temp folder
-
-    dl_folder: string, this is the path to the folder where the old data is
-
-    returns: Path to file in temp folder and path to file in data folder to be replaced
-    '''
-    dl_folder = dl_folder + '/'
-    filenames = next(os.walk(dl_folder), (None, None, []))[2]
-    for name in filenames:
-        filepath = dl_folder + name
-        if filecmp.cmp(f1=filepath,f2=new_file_path,shallow=False):
-            return new_file_path,filepath
-
-    # ok so this whole if statement below here is a workaround that is necessary
-    # i can't believe this actually works
-    # basically if we have undownloaded data with the same title we run into a problem 
-    # where it will never download because the folder already exists. So to fix this
-    # we create a global list of links that have already been seen before so that when
-    # it inevitably gets here, it will check to see if the link has been processed,
-    # and if it hasn't, it will create an empty file in the place we want to download it
-    # it then returns the path to the file in /temp and the path to the place we want it to go
-    # taking advantage of shutil.move
-    if (url_new not in all_links) and (os.path.isdir(dl_folder)):
-        files_in_directory = len(next(os.walk(dl_folder), (None, None, []))[2])
-        name = dl_folder.split(sep='/')[-2] + '-' + str(files_in_directory) + '.' + type
-        workaround_path = dl_folder + name
-        workaround_file = open(workaround_path,'w')
-        workaround_file.close()
-        return new_file_path,workaround_path
-
-    clear_temp()
-
-    raise Exception(f'No files in {dl_folder} match {new_file_path}')
-
 def main():
    if run:
       if not connected_to_internet():
@@ -244,37 +340,71 @@ def main():
          # 2: Iterate over all entries to check if enough time has passed
 
          if ((round(time.time(),0) - info[3]) >= 50):
-            df.iloc[idx] = [info[0],info[1],info[2],int(time.time())]
-            
-            dl_folder = data_folder_path + '/' + info[0]            
-            if os.path.isdir(dl_folder):
+            df.iloc[idx,3] = int(time.time())
+            dl_folder = data_folder_path + '/' + info[0]    
+                    
+            if (info[4] == 'empty') or (not os.path.isdir(dl_folder)):
                try:
-                  filename,filepath = download_url(url=info[1],save_path=temp_folder,type=info[2])
-                  temp_filepath,old_filepath = is_same_file(new_file_path=filepath,dl_folder=dl_folder,url_new=info[1],type=info[2])
-                  shutil.move(src=temp_filepath,dst=old_filepath)
-                  clear_temp()
-                  name = old_filepath.split(sep='/')[-1]
-                  data_folder = dl_folder + '/' + name.split(sep='.')[0]
-                  shutil.rmtree(data_folder)
+                  if not os.path.isdir(dl_folder):
+                     os.mkdir(dl_folder)
+                  filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
+                  df.iloc[idx,4] = filepath
+                     
                   autoprocess(filepath,dl_folder)
+                  try:
+                     del filepath
+                  except:
+                     pass
                except:
                   pass
 
-            else:
+            elif (info[4] != 'empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
                try:
-                  os.mkdir(dl_folder)
-                  filename,filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
-                  autoprocess(filepath,dl_folder)
+
+                  #1: Download data to temp folder using url, return temp filepath and name of file
+                  new_filepath = download_url(url=info[1],save_path=temp_folder,type=info[2])
+                  old_filepath = info[4]
+
+                  #1.5: Check to see if files are the same
+                  if (info[2] == 'zip'):
+                     same_file = filecmp.cmpfiles(a=new_filepath,b=old_filepath,shallow=False)
+                  else:
+                     same_file = filecmp.cmp(f1=new_filepath,f2=old_filepath,shallow=False)
+
+                  #2: If files are the same, clear temp folder
+                  if same_file:
+                     clear_temp()
+
+                  #3: If files are different, move new file in temp to overwrite old file
+                  #   clear temp folder, delete old data folder, and process new data
+                  elif not same_file:
+                     shutil.move(src=new_filepath,dst=old_filepath)
+                     clear_temp()
+
+                     filename = old_filepath.split(sep='/')[-1].split(sep='.')[0]
+                     data_folder = dl_folder + '/' + filename.split(sep='.')[0] + '_Data'
+                     shutil.rmtree(path=data_folder)
+
+                     autoprocess(data_path=old_filepath,dl_folder=dl_folder)
+
+                     try:
+                        del old_filepath,new_filepath
+                     except:
+                        pass
+
                except:
-                  pass   
-      
-         all_links.append(info[1])   
+                  pass
+
+         try:
+            clear_temp()
+         except:
+            pass
       
       # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
 
       # 4. Overwrite file 
       df.to_csv(sys.path[0] + '/websites.csv',index=False)
-      #print('looped')
+      # print('looped')
       
    window.after(1, main)
 
