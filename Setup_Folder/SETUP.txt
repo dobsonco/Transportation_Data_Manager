@@ -1,0 +1,5 @@
+How to get this working:
+
+1: Download Anaconda and add python to path
+2: Run setup, that will create a virtual environment with all needed packages for main.py to run
+(If this does not work, run setup.py using the command: python3 setup.py)

@@ -1,6 +1,5 @@
 from urllib.request import urlopen
 import requests
-from bs4 import BeautifulSoup
 import signal
 import pandas as pd
 import time
@@ -16,8 +15,14 @@ import glob
 import filecmp
 import shutil
 
+global sys_path
+sys_path = sys.path[0]
+
 global temp_folder
-temp_folder = sys.path[0] + '/Data/temp'
+temp_folder = sys_path + '/Data/temp'
+
+global ConnectedToInternetTimer
+ConnnectedToInternetTime = round(time.time(),0) + 1000
 
 class TimeoutException(Exception): # Creating custom error
    pass
@@ -27,115 +32,21 @@ def timeout_handler(): # Creating function to handle error
     
 signal.signal(signal.SIGALRM, timeout_handler);
 
-def get_title(url):
-   '''
-   This function reads the html and finds the title, returning it as a string
-   '''
-   if (url == None) or ('http' not in url):
-      raise ValueError(f'Not a useable url: "{url}"')
-   try:
-      response = urlopen(url)
-      soup = BeautifulSoup(response, 'html.parser')
-      title = soup.title.get_text()
-      del url,soup,response
-      return title
-   except:
-      raise ValueError(f'Not a useable url: "{url}"')
-    
-def find_all_links(page):
-   '''
-   Finds all links on page, this is a WIP as it doesn't find all links
-   '''
-   soup = BeautifulSoup(page,features="lxml")
-   all_links = []
-   for line in soup.find_all('a'):
-      line = line.get('href')
-      try:
-         if ('http' not in line):
-               continue
-      except:
-         continue
-      all_links.append(line)
-   del soup,line,page
-   return list(set(all_links))
-
-def find_relevant_links_and_titles(all_links,keywords,search_title = False):
-   '''
-   Given a list of links and a list of keywords this method will find links/titles that contain
-   keywords
-
-   all_links: list, contains all links you want to parse
-
-   keywords: list, contains all keywords you want to look for
-
-   search_title: bool, leave this set to false in order to save time, but if you want to search
-      titles anyway, set it to true. If set to true, the script will download the html
-      of the page, strip the title from it, and then look for keywords. This is a massive
-      time waste.
-   '''
-   name_and_link = []
-   keywords_upper = [string.capitalize() for string in keywords]
-   for link in all_links:
-      signal.alarm(5)
-      if search_title:
-         try:
-               title = get_title(link).lower()
-               if any(substring in title for substring in keywords):
-                  name_and_link.append((title,link)) 
-               else:
-                  pass
-         except:
-               continue
-         else: 
-               signal.alarm(0)
-      else:
-         try:
-               link = link.lower()
-               if any(substring in link for substring in keywords):
-                  title = get_title(link)
-                  name_and_link.append((title,link))
-               else:              
-                  pass
-         except:
-               continue
-         else:
-               signal.alarm(0)
-   del keywords,keywords_upper,link,all_links
-   return list(set(name_and_link))
-
-def relevant_links(url,keywords):
-   '''
-   This method takes a link, strips all links on the page, and finds all links that contain
-   keywords
-
-   url: string, link to website you want to parse
-
-   keywords: list, contains all keywords to look for
-
-   returns: list of links that match
-   '''
-
-   page = urlopen(url).read()
-
-   all_links = find_all_links(page)
-
-   name_and_link = list(set(find_relevant_links_and_titles(all_links,keywords,search_title=False)))
-
-   return name_and_link
-
 def on_start():
    global run
    run = True
+   global ConnectedToInternetTimer
+   ConnnectedToInternetTime = round(time.time(),0)
 
 def on_stop():
    global run
    run = False
 
 def connected_to_internet(url='http://www.google.com/', timeout=5):
-    try:
-        _ = requests.head(url, timeout=timeout)
-        return True
-    except requests.ConnectionError:
+   try:
+      _ = requests.head(url, timeout=timeout)
+      return True
+   except requests.ConnectionError:
       return False
 
 def download_url(url, save_path, chunk_size=1024, type='csv'):
@@ -181,6 +92,7 @@ def clear_temp(dir=temp_folder):
             shutil.rmtree(file_path)
       except:
          pass
+
 def autoprocess(data_path,dl_folder):
    try:
       data = pd.read_csv(data_path,low_memory=False)
@@ -274,17 +186,19 @@ def autoprocess(data_path,dl_folder):
 def main():
    if run:
       if not connected_to_internet():
+         if (round(time.time(),0) - ConnnectedToInternetTime >= 1000) or (round(time.time(),0) - ConnnectedToInternetTime <= 5):
+            print('Not connected to internet')
          return
 
       # Check if data folder exists
-      data_folder_path = sys.path[0] + '/Data'
+      data_folder_path = sys_path + '/Data'
       if not os.path.isdir(data_folder_path):
          print('Directory "Data" does not exist in current directory. Creating Directory.')
          os.mkdir(path=data_folder_path)
          os.mkdir(path=temp_folder)
 
       # Check if websites.csv exists
-      websites_csv_path = sys.path[0] + '/websites.csv'
+      websites_csv_path = sys_path + '/websites.csv'
       if not os.path.isfile(websites_csv_path):
          sys.exit('Necessary file "websites.csv" does not exist in current directory. Exiting Program.')
 
@@ -296,29 +210,27 @@ def main():
          sys.exit('Failed to open websites.csv. Exiting Program.')
 
       for idx,info in df.iterrows():
+         dl_folder = data_folder_path + '/' + info[0]   
 
-         # 2: Iterate over all entries to check if enough time has passed
-
-         if ((round(time.time(),0) - info[3]) >= 50):
-            df.iloc[idx,3] = int(time.time())
-            dl_folder = data_folder_path + '/' + info[0]    
-                    
-            if (info[4] == 'empty') or (not os.path.isdir(dl_folder)):
+         if (info[4] == 'empty') or (not os.path.isdir(dl_folder)):
+            try:
+               if not os.path.isdir(dl_folder):
+                  os.mkdir(dl_folder)
+               filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
+               df.iloc[idx,4] = filepath
+               autoprocess(filepath,dl_folder)
                try:
-                  if not os.path.isdir(dl_folder):
-                     os.mkdir(dl_folder)
-                  filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
-                  df.iloc[idx,4] = filepath
-                     
-                  autoprocess(filepath,dl_folder)
-                  try:
-                     del filepath
-                  except:
-                     pass
+                  del filepath
                except:
                   pass
+            except:
+               pass
 
-            elif (info[4] != 'empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
+         # 2: Iterate over all entries to check if enough time has passed
+         if ((round(time.time(),0) - info[3]) >= 1000):
+            df.iloc[idx,3] = int(time.time()) 
+
+            if (info[4] != 'empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
                try:
 
                   #1: Download data to temp folder using url, return temp filepath and name of file
@@ -363,14 +275,14 @@ def main():
       # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
 
       # 4. Overwrite file 
-      df.to_csv(sys.path[0] + '/websites.csv',index=False)
+      df.to_csv(sys_path + '/websites.csv',index=False)
       # print('looped')
       
    window.after(1, main)
 
 window = Tk()
 window.title('Transportation Data Manager')
-window.iconbitmap(sys.path[0] + '/Resources/car2.ico')
+window.iconbitmap(sys_path + '/Resources/car2.ico')
 
 frame = Frame(window)
 frame.pack()
@@ -406,7 +318,7 @@ New buttons and features may be added later if I can make it work''')
 info_label.tag_add('center',1.0,'end')
 info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
 
-resized_img = Image.open(sys.path[0] + '/Resources/UT_logo.png').resize((130,100),Image.LANCZOS);
+resized_img = Image.open(sys_path + '/Resources/UT_logo.png').resize((130,100),Image.LANCZOS);
 img = ImageTk.PhotoImage(resized_img)
 canvas.create_image(350,260,image=img)
 
