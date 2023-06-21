@@ -11,6 +11,6 @@ reqs_path = resource_path('requirements.txt')
 
 print('Reading requirements.txt')
 
-os.system(f'conda create --name TransportationManager --file {reqs_path}')
+os.system(f'pip install -r {reqs_path}')
 
 print('Successfully created environment')

@@ -24,6 +24,9 @@ temp_folder = sys_path + '/Data/temp'
 global ConnectedToInternetTimer
 ConnnectedToInternetTime = round(time.time(),0) + 1000
 
+global run
+run = False
+
 class TimeoutException(Exception): # Creating custom error
    pass
 
@@ -75,8 +78,6 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
       filepath = max(glob.glob(os.path.join(save_path, '*/')), key=os.path.getmtime)
       name = filepath.split(sep='/')[-2]
 
-      return filepath
-
    return filepath
 
 def clear_temp(dir=temp_folder):
@@ -94,21 +95,21 @@ def clear_temp(dir=temp_folder):
          pass
 
 def autoprocess(data_path,dl_folder):
+   '''
+   Takes path to data and path to download folder and generates plots from it
+   '''
    try:
       data = pd.read_csv(data_path,low_memory=False)
    except:
-      try:
-         filename = data_path.split(sep='/')[-1]
-         data_folder = dl_folder + '/' + filename.split(sep='.')[0]
-         if not os.path.isdir(data_folder):
-            os.mkdir(data_folder)
-         failed_to_process = open(data_folder + '/failed_to_process.txt','a')
-         e = datetime.now()
-         failed_to_process.write(f'{filename} failed to open on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
-         failed_to_process.close()
-         return
-      except:
-         return
+      filename = data_path.split(sep='/')[-1]
+      data_folder = dl_folder + '/' + filename.split(sep='.')[0]
+      if not os.path.isdir(data_folder):
+         os.mkdir(data_folder)
+      failed_to_process = open(data_folder + '/failed_to_process.txt','a')
+      e = datetime.now()
+      failed_to_process.write(f'{filename} failed to open on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
+      failed_to_process.close()
+      return
 
    filename = data_path.split(sep='/')[-1].split(sep='.')[0]
    data_folder = dl_folder + '/' + filename.split(sep='.')[0] + '_Data'
@@ -166,21 +167,18 @@ def autoprocess(data_path,dl_folder):
       e = datetime.now()
       failed_to_process.write(f'{filename} failed to process both histograms and plots on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
       failed_to_process.close()
-      return
    elif all(failed1) and not all(failed2):
       filename = data_path.split(sep='/')[-1]
       failed_to_process = open(data_folder + '/failed_to_process.txt','a')
       e = datetime.now()
       failed_to_process.write(f'{filename} failed to process histograms on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
       failed_to_process.close()
-      return
    elif all(failed2) and not all(failed1):
       filename = data_path.split(sep='/')[-1]
       failed_to_process = open(data_folder + '/failed_to_process.txt','a')
       e = datetime.now()
       failed_to_process.write(f'{filename} failed to process plots on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
       failed_to_process.close()
-      return
    return
 
 def main():
@@ -202,13 +200,14 @@ def main():
       if not os.path.isfile(websites_csv_path):
          sys.exit('Necessary file "websites.csv" does not exist in current directory. Exiting Program.')
 
-      # 1. Read in csv with websites
+      # Read in csv with websites
       try:
          df = pd.read_csv(websites_csv_path,header=0)
          df = df.reset_index(drop=True)
       except:
          sys.exit('Failed to open websites.csv. Exiting Program.')
 
+      # Iterate over rows of websites.csv
       for idx,info in df.iterrows():
          dl_folder = data_folder_path + '/' + info[0]   
 
@@ -219,36 +218,32 @@ def main():
                filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
                df.iloc[idx,4] = filepath
                autoprocess(filepath,dl_folder)
-               try:
-                  del filepath
-               except:
-                  pass
             except:
                pass
 
-         # 2: Iterate over all entries to check if enough time has passed
+         # Check if enough time has passed
          if ((round(time.time(),0) - info[3]) >= 1000):
             df.iloc[idx,3] = int(time.time()) 
 
             if (info[4] != 'empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
                try:
 
-                  #1: Download data to temp folder using url, return temp filepath and name of file
+                  #Download data to temp folder using url, return temp filepath and name of file
                   new_filepath = download_url(url=info[1],save_path=temp_folder,type=info[2])
                   old_filepath = info[4]
 
-                  #1.5: Check to see if files are the same
+                  #Check to see if files are the same
                   if (info[2] == 'zip'):
                      same_file = filecmp.cmpfiles(a=new_filepath,b=old_filepath,shallow=False)
                   else:
                      same_file = filecmp.cmp(f1=new_filepath,f2=old_filepath,shallow=False)
 
-                  #2: If files are the same, clear temp folder
+                  #If files are the same, clear temp folder
                   if same_file:
                      clear_temp()
 
-                  #3: If files are different, move new file in temp to overwrite old file
-                  #   clear temp folder, delete old data folder, and process new data
+                  #If files are different, move new file in temp to overwrite old file
+                  #clear temp folder, delete old data folder, and process new data
                   elif not same_file:
                      shutil.move(src=new_filepath,dst=old_filepath)
                      clear_temp()
@@ -276,7 +271,6 @@ def main():
 
       # 4. Overwrite file 
       df.to_csv(sys_path + '/websites.csv',index=False)
-      # print('looped')
       
    window.after(1, main)
 
@@ -289,9 +283,6 @@ frame.pack()
 
 canvas = Canvas(frame, width=400, height=300, bg='#D3D3D3')
 canvas.pack()
-
-global run
-run = False
 
 start_label = Text(canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
 start_label.tag_configure('center',justify='center')  
