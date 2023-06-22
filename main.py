@@ -1,12 +1,12 @@
 from urllib.request import urlopen
-import requests
+from requests import head,ConnectionError,get
 from pandas import read_csv,DataFrame
 from time import time
 from datetime import datetime
 from tkinter import *
 from PIL import ImageTk,Image
 import os
-import sys
+from sys import path,exit
 import matplotlib.pyplot as plt
 from numpy import array
 from zipfile import ZipFile
@@ -16,7 +16,7 @@ from shutil import move,rmtree
 from threading import Thread
 
 global sys_path
-sys_path = sys.path[0]
+sys_path = path[0]
 
 global temp_folder
 temp_folder = os.path.join(sys_path,'Data','temp')
@@ -55,7 +55,9 @@ def on_stop():
    switch()
 
 def switch():
-   if start_button["state"] == "normal":
+   if (start_button["state"] == "normal") and (end_button["state"] == "normal") and (run == False):
+      pass
+   elif start_button["state"] == "normal":
       start_button["state"] = "disabled"
       end_button["state"] = "normal"
    elif (start_button["state"] != "normal"):
@@ -64,9 +66,9 @@ def switch():
 
 def connected_to_internet(url='http://www.google.com/', timeout=5):
    try:
-      _ = requests.head(url, timeout=timeout)
+      _ = head(url, timeout=timeout)
       return True
-   except requests.ConnectionError:
+   except ConnectionError:
       return False
 
 def download_url(url, save_path, chunk_size=1024, type='csv'):
@@ -82,7 +84,7 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
    name = save_path.split(sep='/')[-1] + '-' + str(files_in_directory) + '.' + type
    filepath = os.path.join(save_path,name)
 
-   r = requests.get(url, stream=True)
+   r = get(url, stream=True)
    with open(filepath, 'wb') as fd:
       for chunk in r.iter_content(chunk_size=chunk_size):
          fd.write(chunk)
@@ -209,14 +211,14 @@ def main():
 
          # Check if websites.csv exists
          if not os.path.isfile(websites_csv_path):
-            sys.exit('Necessary file "websites.csv" does not exist in current directory. Exiting Program.')
+            exit('Necessary file "websites.csv" does not exist in current directory. Exiting Program.')
 
          # Read in csv with websites
          try:
             df = read_csv(websites_csv_path,header=0)
             df = df.reset_index(drop=True)
          except:
-            sys.exit('Failed to open websites.csv. Exiting Program.')
+            exit('Failed to open websites.csv. Exiting Program.')
 
          # Iterate over rows of websites.csv
          for idx,info in df.iterrows():
@@ -290,6 +292,7 @@ start_label.tag_configure('center',justify='center')
 start_label.insert('1.0','When pressed, this button will start the loop')
 start_label.tag_add('center',1.0,'end')
 start_label.place(relx = 0.3, rely = 0.4,anchor=CENTER)
+start_label.config(state= DISABLED)
 
 start_button = Button(canvas, text="Start", command=on_start, padx=6,pady=5,highlightthickness=0)
 start_button.place(relx=0.75, rely=0.4, anchor=CENTER)
@@ -299,6 +302,7 @@ end_label.tag_configure('center',justify='center')
 end_label.insert('1.0','When pressed, this button will end the loop')
 end_label.tag_add('center',1.0,'end')
 end_label.place(relx = 0.3, rely = 0.6,anchor=CENTER)
+end_label.config(state= DISABLED)
 
 end_button = Button(canvas, text="Stop", command=on_stop,padx=6,pady=5,highlightthickness=0)
 end_button.place(relx=0.75,rely=0.6,anchor=CENTER)
@@ -309,6 +313,7 @@ info_label.insert('1.0','''This rudimentary GUI controls the script.
 New buttons and features may be added later if I can make it work''')
 info_label.tag_add('center',1.0,'end')
 info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
+info_label.config(state= DISABLED)
 
 resized_img = Image.open(os.path.join(sys_path,'Resources','UT_logo.png')).resize((130,100),Image.LANCZOS);
 img = ImageTk.PhotoImage(resized_img)
@@ -319,7 +324,10 @@ who_made_this.tag_configure('center',justify='center')
 who_made_this.insert('1.0','''This program was made by Collin Dobson for the UTORII SMaRT internship''')
 who_made_this.tag_add('center',1.0,'end')
 who_made_this.place(relx=0.35,rely = 0.85,anchor=CENTER)
+who_made_this.config(state= DISABLED)
 
 window.after(30000,autoprocess)
 
 window.mainloop()
+
+print('successfully exited program')
