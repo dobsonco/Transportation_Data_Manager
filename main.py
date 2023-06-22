@@ -1,4 +1,3 @@
-from urllib.request import urlopen
 from requests import head,ConnectionError,get
 from pandas import read_csv,DataFrame
 from time import time
