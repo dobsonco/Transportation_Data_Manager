@@ -320,7 +320,7 @@ who_made_this.tag_add('center',1.0,'end')
 who_made_this.place(relx=0.35,rely = 0.85,anchor=CENTER)
 who_made_this.config(state= DISABLED)
 
-window.after(1000,autoprocess)
+window.after(30000,autoprocess)
 
 window.mainloop()
 
