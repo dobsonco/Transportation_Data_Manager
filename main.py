@@ -80,7 +80,7 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
    return the path to the folder along with the name of the folder
    '''
    files_in_directory = len(next(os.walk(save_path), (None, None, []))[2])
-   name = save_path.split(sep='/')[-1] + '-' + str(files_in_directory) + '.' + type
+   name = os.path.basename(save_path).split(sep='.')[0] + '-' + str(files_in_directory) + '.' + type
    filepath = os.path.join(save_path,name)
 
    r = get(url, stream=True)
@@ -95,7 +95,7 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
             zObject.close()
             os.unlink(filepath)
          filepath = max(glob(os.path.join(save_path, '*/')), key=os.path.getmtime)
-         name = filepath.split(sep='/')[-2]
+         name = os.path.basename(filepath).split(sep='.')[0]
    except:
       raise ValueError
 

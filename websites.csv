@@ -1,18 +1,18 @@
 title,url,type,last_checked,path
-Regional Transportation Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/kaau-hhd5/rows.csv?accessType=DOWNLOAD,csv,1687534412.0,empty
-Bike Racks (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/yjju-hypq/rows.csv?accessType=DOWNLOAD,csv,1687534413.0,empty
-Metropolitan Transit Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/22t2-bdkj/rows.csv?accessType=DOWNLOAD,csv,1687534415.0,empty
-Regional Transportation Authority Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/p886-fnbd/rows.csv?accessType=DOWNLOAD,csv,1687534417.0,empty
-Sidewalk Inventory for ADA Self-Assessment | Nashville Open Data Portal,https://data.nashville.gov/api/views/vpxc-b5te/rows.csv?accessType=DOWNLOAD,csv,1687534418.0,empty
-WeGo Transit and Middle TN RTA Stops and Routes (GTFS) | Nashville Open Data Portal,https://data.nashville.gov/download/2246-gtr4/application%2Fzip,zip,1687534426.0,empty
-WeGo Transit Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/vfe9-k7vc/rows.csv?accessType=DOWNLOAD,csv,1687534428.0,empty
-MATA Transit map,https://www.matatransit.com/assets/2/6/MATA_November_2021_System_Map.pdf,pdf,1687534429.0,empty
-Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/55g4-zatm/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1687534433.0,empty
-Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/v868-x5mt/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1687534434.0,empty
-Jams by Month | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/uuky-tt6g/rows.csv?accessType=DOWNLOAD,csv,1687534438.0,empty
-KAT | Schedules and Maps,https://katbus.com/wp-content/uploads/2023/02/System-map-8-29-22.pdf,pdf,1687534439.0,empty
-Routes | Lakeway Transit,https://www.lakewaytransit.com/_files/ugd/880354_c0d11605b4c649078a0b98916714f6c8.pdf,pdf,1687534441.0,empty
-Knoxville Bike Map,https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/knoxville/KnoxBicycle_Map2017_65598a5c-c35f-4fdc-96d2-9fe781752710.pdf,pdf,1687534443.0,empty
-MATA On Time Performance | Memphis Data Hub,https://data.memphistn.gov/api/views/w4fr-mktp/rows.csv?accessType=DOWNLOAD,csv,1687534447.0,empty
-Memfacts MATA On Time Performance,https://data.memphistn.gov/api/views/w4fr-mktp/rows.csv?accessType=DOWNLOAD,csv,1687534447.0,empty
-Go UC Cookeville SATURDAY,https://ucpublictransit.com/wp-content/uploads/2022/12/Go-UC-Cookeville-Complete-w-Saturday-12072022.pdf,pdf,1687534448.0,empty
+Regional Transportation Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/kaau-hhd5/rows.csv?accessType=DOWNLOAD,csv,1687581556.0,empty
+Bike Racks (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/yjju-hypq/rows.csv?accessType=DOWNLOAD,csv,1687581557.0,empty
+Metropolitan Transit Authority Bus Routes (GIS) | Nashville Open Data Portal,https://data.nashville.gov/api/views/22t2-bdkj/rows.csv?accessType=DOWNLOAD,csv,1687581558.0,empty
+Regional Transportation Authority Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/p886-fnbd/rows.csv?accessType=DOWNLOAD,csv,1687581558.0,empty
+Sidewalk Inventory for ADA Self-Assessment | Nashville Open Data Portal,https://data.nashville.gov/api/views/vpxc-b5te/rows.csv?accessType=DOWNLOAD,csv,1687581565.0,empty
+WeGo Transit and Middle TN RTA Stops and Routes (GTFS) | Nashville Open Data Portal,https://data.nashville.gov/download/2246-gtr4/application%2Fzip,zip,1687581567.0,empty
+WeGo Transit Bus Stops | Nashville Open Data Portal,https://data.nashville.gov/api/views/vfe9-k7vc/rows.csv?accessType=DOWNLOAD,csv,1687581567.0,empty
+MATA Transit map,https://www.matatransit.com/assets/2/6/MATA_November_2021_System_Map.pdf,pdf,1687581568.0,empty
+Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/55g4-zatm/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1687581570.0,empty
+Chattanooga Traffic Flow | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/v868-x5mt/rows.csv?date=20230608&accessType=DOWNLOAD,csv,1687581571.0,empty
+Jams by Month | Chattanooga Open Data Portal,https://www.chattadata.org/api/views/uuky-tt6g/rows.csv?accessType=DOWNLOAD,csv,1687581572.0,empty
+KAT | Schedules and Maps,https://katbus.com/wp-content/uploads/2023/02/System-map-8-29-22.pdf,pdf,1687581572.0,empty
+Routes | Lakeway Transit,https://www.lakewaytransit.com/_files/ugd/880354_c0d11605b4c649078a0b98916714f6c8.pdf,pdf,1687581573.0,empty
+Knoxville Bike Map,https://assets.simpleviewinc.com/simpleview/image/upload/v1/clients/knoxville/KnoxBicycle_Map2017_65598a5c-c35f-4fdc-96d2-9fe781752710.pdf,pdf,1687581574.0,empty
+MATA On Time Performance | Memphis Data Hub,https://data.memphistn.gov/api/views/w4fr-mktp/rows.csv?accessType=DOWNLOAD,csv,1687581574.0,empty
+Memfacts MATA On Time Performance,https://data.memphistn.gov/api/views/w4fr-mktp/rows.csv?accessType=DOWNLOAD,csv,1687581574.0,empty
+Go UC Cookeville SATURDAY,https://ucpublictransit.com/wp-content/uploads/2022/12/Go-UC-Cookeville-Complete-w-Saturday-12072022.pdf,pdf,1687581575.0,empty
