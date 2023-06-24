@@ -39,14 +39,14 @@ stop = False
 def on_start():
    global run
    run = True
-   print(run)
+   (run)
    global stop
    stop = False
    global ConnectedToInternetTimer
    ConnnectedToInternetTime = round(time(),0)
    switch()
    main_thread = Thread(target=main).start()
-   print('started main thread')
+   ('started main thread')
 
 def on_stop():
    global run
@@ -127,7 +127,6 @@ def autoprocess():
    
    to_process = []
    to_process = glob(data_folder_path + '/*/*.csv')
-   print(to_process)
 
    for i,vals in enumerate(to_process):
       data_path = vals
@@ -332,4 +331,4 @@ window.after(100,autoprocess)
 
 window.mainloop()
 
-print('successfully exited program')
+('successfully exited program')
