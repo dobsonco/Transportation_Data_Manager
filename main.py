@@ -13,6 +13,7 @@ from glob import glob
 from filecmp import cmpfiles,cmp
 from shutil import move,rmtree
 from threading import Thread
+from re import sub
 
 global sys_path
 sys_path = path[0]
@@ -55,7 +56,8 @@ def on_stop():
 
 def switch():
    if (start_button["state"] == "normal") and (end_button["state"] == "normal") and (run == False):
-      pass
+      start_button["state"] = "normal"
+      end_button["state"] = "disabled"
    elif start_button["state"] == "normal":
       start_button["state"] = "disabled"
       end_button["state"] = "normal"
@@ -179,7 +181,6 @@ def autoprocess():
    window.after(30000,autoprocess)
    return
 
-
 def main():
    while True:
 
@@ -216,7 +217,10 @@ def main():
          # Iterate over rows of websites.csv
          for idx,info in df.iterrows():
             
-            dl_folder = os.path.join(data_folder_path,info[0])  
+            title = sub('[^0-9a-zA-Z._:/\\\]+', '', info[0].replace(' ','_')).replace('__','_')
+            df.iloc[idx,0] = title
+           
+            dl_folder = os.path.join(data_folder_path,title)
 
             if (info[4] == 'empty') or (not os.path.isdir(dl_folder)):
                try:
