@@ -39,6 +39,7 @@ stop = False
 def on_start():
    global run
    run = True
+   print(run)
    global stop
    stop = False
    global ConnectedToInternetTimer
@@ -119,11 +120,14 @@ def clear_temp(dir=temp_folder):
          pass
 
 def autoprocess():
-   if not run:
-      return
 
+   if not run:
+      window.after(100,autoprocess)
+      return
+   
    to_process = []
    to_process = glob(data_folder_path + '/*/*.csv')
+   print(to_process)
 
    for i,vals in enumerate(to_process):
       data_path = vals
@@ -178,7 +182,7 @@ def autoprocess():
                pass
       plt.close('all')
 
-   window.after(30000,autoprocess)
+   window.after(100,autoprocess)
    return
 
 def main():
@@ -324,7 +328,7 @@ who_made_this.tag_add('center',1.0,'end')
 who_made_this.place(relx=0.35,rely = 0.85,anchor=CENTER)
 who_made_this.config(state= DISABLED)
 
-window.after(30000,autoprocess)
+window.after(100,autoprocess)
 
 window.mainloop()
 
