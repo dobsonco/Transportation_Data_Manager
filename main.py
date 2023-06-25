@@ -134,7 +134,6 @@ def autoprocess():
    for i,vals in enumerate(to_process):
       data_path = vals
       dl_folder = data_path[0:(len(data_path)-(len(os.path.basename(data_path))))]
-      print(dl_folder)
       filename = os.path.basename(data_path)
       try:
          data = read_csv(data_path,low_memory=False)
@@ -151,13 +150,10 @@ def autoprocess():
       data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] + '_Data'))
       if not os.path.isdir(data_folder):
          os.mkdir(data_folder)
-         print(f'data_folder: {data_folder}')
          histogram_path = os.path.join(data_folder,'Histograms')
          os.mkdir(histogram_path)
-         print(f'histogram: {histogram_path}')
          plots_path = os.path.join(data_folder,'Plots')
          os.mkdir(plots_path)
-         print(f'plots: {plots_path}')
 
       for j,col in enumerate(data):
          if (data.dtypes[j] != 'object') and (data.dtypes[j] != 'bool'):
@@ -252,7 +248,6 @@ def main():
 
                if (info[4] != 'empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
                   try:
-
                      #Download data to temp folder using url, return temp filepath and name of file
                      new_filepath = download_url(url=info[1],save_path=temp_folder,type=info[2])
                      old_filepath = info[4]
