@@ -130,6 +130,7 @@ def clear_temp(dir=temp_folder):
 
 def autoprocess():
    if not run:
+      window.after(100,autoprocess)
       return
 
    to_process = []
@@ -195,14 +196,13 @@ def autoprocess():
       except:
          continue
 
-   window.after(30000,autoprocess)
+   window.after(100,autoprocess)
    return
 
 def main():
    while True:
-
       if run:
-         if not connected_to_internet():
+         if not connected_to_internet(timeout=1):
             if (round(time(),0) - ConnnectedToInternetTime >= 1000) or (round(time(),0) - ConnnectedToInternetTime <= 5):
                print('Not connected to internet')
             return
@@ -291,7 +291,7 @@ def main():
          print('how did you get here?\nGonna exit the program')
          sleep(0.5)
          exit('Exiting')
-         
+
    global stopped 
    stopped = True
 
@@ -344,7 +344,7 @@ who_made_this.tag_add('center',1.0,'end')
 who_made_this.place(relx=0.35,rely = 0.85,anchor=CENTER)
 who_made_this.config(state= DISABLED)
 
-window.after(30000,autoprocess)
+window.after(100,autoprocess)
 
 window.mainloop()
 
