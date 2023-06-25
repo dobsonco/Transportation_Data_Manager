@@ -1,6 +1,6 @@
 from requests import head,ConnectionError,get
 from pandas import read_csv,DataFrame
-from time import time
+from time import time,sleep
 from datetime import datetime
 from tkinter import *
 from PIL import ImageTk,Image
@@ -33,36 +33,37 @@ ConnnectedToInternetTime = round(time(),0) + 1000
 global run
 run = False
 
-global stop
-stop = False
-
 global stopped
 stopped = False
 
 def on_start():
+   '''
+   This mess of a function starts the manin thread
+   '''
    global run
    run = True
-   global stop
-   stop = False
    global ConnectedToInternetTimer
    ConnnectedToInternetTime = round(time(),0)
-   switch()
+   global stopped
+   stopped = False
    global main_thread
    main_thread = Thread(target=main).start()
    print('started main thread')
-   global stopped
-   stopped = False
+   switch()
+
 
 def on_stop():
+   '''
+   This function stops the main thread
+   '''
    global run
    run = False
-   global stop
-   stop = True
-   switch()
    global stopped
    stopped = True
+   switch()
 
 def switch():
+   # Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this
    if (start_button["state"] == "normal") and (end_button["state"] == "normal") and (run == False):
       start_button["state"] = "normal"
       end_button["state"] = "disabled"
@@ -74,10 +75,13 @@ def switch():
       end_button["state"] = "disabled"
 
 def connected_to_internet(url='http://www.google.com/', timeout=5):
+   '''
+   Does what it says, returns true if connected to internet, else returns false
+   '''
    try:
       _ = head(url, timeout=timeout)
       return True
-   except ConnectionError:
+   except:
       return False
 
 def download_url(url, save_path, chunk_size=1024, type='csv'):
@@ -112,7 +116,7 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
 
 def clear_temp(dir=temp_folder):
    '''
-   Clears all files and directories from temp folder
+   Clears all files and directories from temp folder, can be used on other folders
    '''
    for filename in os.listdir(dir):
       file_path = os.path.join(dir, filename)
@@ -194,15 +198,10 @@ def autoprocess():
    window.after(30000,autoprocess)
    return
 
-
 def main():
    while True:
 
-      if stop:
-         print('exiting main thread')
-         break
-
-      elif run:
+      if run:
          if not connected_to_internet():
             if (round(time(),0) - ConnnectedToInternetTime >= 1000) or (round(time(),0) - ConnnectedToInternetTime <= 5):
                print('Not connected to internet')
@@ -283,6 +282,16 @@ def main():
 
          # 4. Overwrite file 
          df.to_csv(websites_csv_path,index=False)
+
+      elif not run:
+         print('exititng main thread')
+         break
+
+      else:
+         print('how did you get here?\nGonna exit the program')
+         sleep(0.5)
+         exit('Exiting')
+         
    global stopped 
    stopped = True
 

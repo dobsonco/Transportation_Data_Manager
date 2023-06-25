@@ -1,8 +1,8 @@
-# This is the repository my Transportation Data Manager
+# This is the repository of my Transportation Data Manager
 The purpose of this repository is to be a place to store the code for my program in case of my laptop dying.
 
 # Very Important Note:
-__This code does not run on Windows. I will likely try to make it work, but idk__
+__This code does run on Windows. But it is more finnicky than on Mac__
 
 ## Who wrote this code?:
 I, that being Collin Dobson wrote this. This is my first shot at making a GUI/app, which will hopefully justify any gripes you may have with my code. 
