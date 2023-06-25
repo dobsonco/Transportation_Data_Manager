@@ -51,7 +51,6 @@ def on_start():
    print('started main thread')
    switch()
 
-
 def on_stop():
    '''
    This function stops the main thread
