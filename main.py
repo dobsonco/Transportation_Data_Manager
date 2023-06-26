@@ -46,7 +46,7 @@ last_loop = False
 ################# Horrible Mess of Functions #################
 def on_start():
    '''
-   This mess of a function starts the manin thread
+   This mess of a function starts the manin thread.
    '''
    global run
    run = True
@@ -61,7 +61,7 @@ def on_start():
 
 def on_stop():
    '''
-   This function stops the main thread
+   This function stops the main thread.
    '''
    global run
    run = False
@@ -71,7 +71,7 @@ def on_stop():
 
 def switch():
    '''
-   Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this
+   Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this.
    '''
    if (start_button["state"] == "normal") and (end_button["state"] == "normal") and (run == False):
       start_button["state"] = "normal"
@@ -85,7 +85,7 @@ def switch():
 
 def connected_to_internet(url='http://www.google.com/', timeout=5):
    '''
-   Does what it says, returns true if connected to internet, else returns false
+   Does what it says, returns true if connected to internet, else returns false.
    '''
    try:
       _ = head(url, timeout=timeout)
@@ -97,10 +97,10 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
    '''
    Save path is just the folder you want to download it in.
 
-   Type must be a string, with the type of file you're downloading
+   Type must be a string, with the type of file you're downloading.
 
    returns name of new file and its filepath. If downloaded is a zip, it will extract it and then 
-   return the path to the folder along with the name of the folder
+   return the path to the folder along with the name of the folder.
    '''
    files_in_directory = len(next(os.walk(save_path), (None, None, []))[2])
    name = os.path.basename(save_path) + '-' + str(files_in_directory) + '.' + type
@@ -125,7 +125,7 @@ def download_url(url, save_path, chunk_size=1024, type='csv'):
 
 def clear_temp(dir=temp_folder):
    '''
-   Clears all files and directories from temp folder, can be used on other folders
+   Clears all files and directories from temp folder, can be used on other folders.
    '''
    for filename in os.listdir(dir):
       file_path = os.path.join(dir, filename)
@@ -233,7 +233,7 @@ def autoprocess():
 
 def main():
    '''
-   So basically this runs on a thread and will only actually run after you press start on the GUI
+   So basically this runs on a thread and will only actually run after you press start on the GUI.
 
    This is the core loop that handles the data and determines where data goes. Reads websites.csv, 
    so try not to mess anything up. Use edit_websites_csv.ipynb to add entries to the csv. If you want to 
