@@ -15,6 +15,7 @@ from shutil import move,rmtree
 from threading import Thread
 from re import sub
 
+################# Horrible Mess of Global Variables #################
 global sys_path
 sys_path = path[0]
 
@@ -36,6 +37,13 @@ run = False
 global stopped
 stopped = False
 
+global autoprocess_running
+autoprocess_running = False
+
+global last_loop
+last_loop = False
+
+################# Horrible Mess of Functions #################
 def on_start():
    '''
    This mess of a function starts the manin thread
@@ -62,7 +70,9 @@ def on_stop():
    switch()
 
 def switch():
-   # Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this
+   '''
+   Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this
+   '''
    if (start_button["state"] == "normal") and (end_button["state"] == "normal") and (run == False):
       start_button["state"] = "normal"
       end_button["state"] = "disabled"
@@ -128,8 +138,20 @@ def clear_temp(dir=temp_folder):
          pass
 
 def autoprocess():
-   print('autoprocess called')
+   '''
+   Horrible Mess of a Function Held together by spit and duct tape
+
+   Call this function to process any and all csv's in the data folder
+   No inputs are required to make this work
+   '''
+   global autoprocess_running
+
+   if autoprocess_running:
+      return
+   
    if run:
+      autoprocess_running = True
+
       to_process = []
       to_process = glob(data_folder_path + '/*/*.csv')
 
@@ -137,16 +159,21 @@ def autoprocess():
          data_path = vals
          dl_folder = data_path[0:(len(data_path)-(len(os.path.basename(data_path))))]
          filename = os.path.basename(data_path)
+
          try:
             data = read_csv(data_path,low_memory=False)
          except:
             data_folder = os.path.join(dl_folder,filename.split(sep='.')[0])
-            if not os.path.isdir(data_folder):
+            if os.path.isdir(dl_folder):
+               del data_path,dl_folder,filename,data_folder
+               continue
+            else: 
                os.mkdir(data_folder)
             failed_to_process = open(os.path.join(data_folder,'failed_to_process.txt'),'a')
             e = datetime.now()
             failed_to_process.write(f'{filename} failed to open on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
             failed_to_process.close()
+            del data_folder
             continue
 
          data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] + '_Data'))
@@ -156,6 +183,9 @@ def autoprocess():
             os.mkdir(histogram_path)
             plots_path = os.path.join(data_folder,'Plots')
             os.mkdir(plots_path)
+         elif os.path.isdir(data_folder):
+            del data_path,dl_folder,filename,data_folder,data
+            continue
 
          for j,col in enumerate(data):
             if (data.dtypes[j] != 'object') and (data.dtypes[j] != 'bool'):
@@ -170,7 +200,7 @@ def autoprocess():
                   ax.yaxis.grid(color='white', linestyle='-')
                   savepath = os.path.join(histogram_path,(filename+'_Histogram-'+str(j + 1)+'.png'))
                   fig.savefig(savepath,format='png')
-                  plt.close(fig)
+                  plt.close()
                except:
                   plt.close('all')
                   pass
@@ -186,25 +216,49 @@ def autoprocess():
                   ax.xaxis.grid(color='white', linestyle='-')
                   savepath = os.path.join(plots_path,(filename+'_Plot-'+str(j + 1)+'.png'))
                   fig.savefig(savepath,format='png')
-                  plt.close(fig)
+                  plt.close()
                except:
                   plt.close('all')
                   pass
+
          try:
             del data_path,dl_folder,filename,data,fig,ax
          except:
             continue
 
+      autoprocess_running = False
+
    window.after(45000,autoprocess)
    return
 
 def main():
+   '''
+   So basically this runs on a thread and will only actually run after you press start on the GUI
+
+   This is the core loop that handles the data and determines where data goes. Reads websites.csv, 
+   so try not to mess anything up. Use edit_websites_csv.ipynb to add entries to the csv. If you want to 
+   remove an entry, you can just delete the line.
+   '''
    while True:
       if run:
-         if not connected_to_internet(timeout=3):
-            if (round(time(),0) - ConnnectedToInternetTime >= 1000) or (round(time(),0) - ConnnectedToInternetTime <= 5):
+         ############# This Mess Determines if You're connected to the internet ##############
+         # If you're not connected it will print it to the terminal every 1000 seconds       #
+         # If you reconnect it will then print that you've reconnected                       #
+         # The reason it's a mess is that it only needs to print once, so it keeps track of  #
+         # what it was last loop and the amount of time since it was last not connected to   #
+         # the internet                                                                      #
+         global last_loop
+         global ConnnectedToInternetTime
+         connected = connected_to_internet(timeout=5)
+         if not connected:
+            last_loop = True
+            if (time()-ConnnectedToInternetTime>=1000) or (time()-ConnnectedToInternetTime<=1e-5):
+               ConnnectedToInternetTime = time()
                print('Not connected to internet')
             continue
+         if (last_loop) and (connected):
+            print('Connected to internet')
+         last_loop = False
 
          # Check if data folder exists
          if not os.path.isdir(data_folder_path):
@@ -226,12 +280,13 @@ def main():
          # Iterate over rows of websites.csv
          for idx,info in df.iterrows():
 
-            title = sub('[^0-9a-zA-Z._:/\\\]+', '', info[0].replace(' ','_')).replace('__','_')
+            title = sub('[^0-9a-zA-Z._:/\\\]+','', info[0].replace(' ','_')).replace('__','_')
             df.iloc[idx,0] = title
             
             dl_folder = os.path.join(data_folder_path,title)  
 
-            if (info[4] == 'empty') or (not os.path.isdir(dl_folder)):
+            # If theres no path or the data directory does not exist, download it
+            if (info[4]=='empty') or (not os.path.isdir(dl_folder)):
                try:
                   if not os.path.isdir(dl_folder):
                      os.mkdir(dl_folder)
@@ -244,24 +299,24 @@ def main():
             if ((round(time(),0) - info[3]) >= 100):
                df.iloc[idx,3] = int(time()) 
 
-               if (info[4] != 'empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
+               if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
                   try:
-                     #Download data to temp folder using url, return temp filepath and name of file
+                     # Download data to temp folder using url, return temp filepath and name of file
                      new_filepath = download_url(url=info[1],save_path=temp_folder,type=info[2])
                      old_filepath = info[4]
 
-                     #Check to see if files are the same
+                     # Check to see if files are the same
                      if (info[2] == 'zip'):
                         same_file = cmpfiles(a=new_filepath,b=old_filepath,shallow=False)
                      else:
                         same_file = cmp(f1=new_filepath,f2=old_filepath,shallow=False)
 
-                     #If files are the same, clear temp folder
+                     # If files are the same, clear temp folder
                      if same_file:
                         clear_temp()
 
-                     #If files are different, move new file in temp to overwrite old file
-                     #clear temp folder, delete old data folder, and process new data
+                     # If files are different, move new file in temp to overwrite old file
+                     # clear temp folder, delete old data folder, and process new data
                      elif not same_file:
                         move(src=new_filepath,dst=old_filepath)
                         clear_temp()
@@ -294,9 +349,10 @@ def main():
    global stopped 
    stopped = True
 
+################# GUI Window #################
 window = Tk()
 window.title('Transportation Data Manager')
-window.iconbitmap(os.path.join(sys_path,'Resources','car2.ico'))
+window.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
 
 frame = Frame(window)
 frame.pack()
@@ -311,8 +367,8 @@ start_label.tag_add('center',1.0,'end')
 start_label.place(relx = 0.3, rely = 0.4,anchor=CENTER)
 start_label.config(state= DISABLED)
 
-start_button = Button(canvas, text="Start", command=on_start, padx=6,pady=5,highlightthickness=0)
-start_button.place(relx=0.75, rely=0.4, anchor=CENTER)
+start_button = Button(canvas,text="Start",command=on_start,padx=6,pady=5,highlightthickness=0)
+start_button.place(relx=0.75,rely=0.4,anchor=CENTER)
 
 end_label = Text(canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
 end_label.tag_configure('center',justify='center')  
@@ -321,13 +377,12 @@ end_label.tag_add('center',1.0,'end')
 end_label.place(relx = 0.3, rely = 0.6,anchor=CENTER)
 end_label.config(state= DISABLED)
 
-end_button = Button(canvas, text="Stop", command=on_stop,padx=6,pady=5,highlightthickness=0)
+end_button = Button(canvas,text="Stop",command=on_stop,padx=6,pady=5,highlightthickness=0)
 end_button.place(relx=0.75,rely=0.6,anchor=CENTER)
 
 info_label = Text(canvas,wrap=WORD,width=30,height=5,padx=6,pady=5,highlightthickness=0)
 info_label.tag_configure('center',justify='center')  
-info_label.insert('1.0','''This rudimentary GUI controls the script. 
-New buttons and features may be added later if I can make it work''')
+info_label.insert('1.0','''This rudimentary GUI controls the script. New buttons and features may be added later if I can make it work''')
 info_label.tag_add('center',1.0,'end')
 info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
 info_label.config(state= DISABLED)
@@ -343,7 +398,7 @@ who_made_this.tag_add('center',1.0,'end')
 who_made_this.place(relx=0.35,rely = 0.85,anchor=CENTER)
 who_made_this.config(state= DISABLED)
 
-window.after(6000,autoprocess)
+window.after(100,autoprocess)
 
 window.mainloop()
 
