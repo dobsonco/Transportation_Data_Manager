@@ -19,17 +19,20 @@ from re import sub
 global sys_path
 sys_path = path[0]
 
-global temp_folder
-temp_folder = os.path.join(sys_path,'Data','temp')
-
 global websites_csv_path
 websites_csv_path = os.path.join(sys_path,'websites.csv')
 
 global data_folder_path
 data_folder_path = os.path.join(sys_path,'Data')
 
+global temp_folder
+temp_folder = os.path.join(data_folder_path,'temp')
+
 global ConnectedToInternetTimer
 ConnnectedToInternetTime = round(time(),0) + 1000
+
+global CheckAgain
+CheckAgain = time() + 1000
 
 global run
 run = False
@@ -249,16 +252,19 @@ def main():
          # the internet                                                                      #
          global last_loop
          global ConnnectedToInternetTime
-         connected = connected_to_internet(timeout=5)
-         if not connected:
-            last_loop = True
-            if (time()-ConnnectedToInternetTime>=1000) or (time()-ConnnectedToInternetTime<=1e-5):
-               ConnnectedToInternetTime = time()
-               print('Not connected to internet')
-            continue
-         if (last_loop) and (connected):
-            print('Connected to internet')
-         last_loop = False
+         global CheckAgain
+         if (abs(CheckAgain - time()) >= 5):
+            CheckAgain = time()
+            connected = connected_to_internet(timeout=5)
+            if not connected:
+               last_loop = True
+               if (time()-ConnnectedToInternetTime>=1000) or (time()-ConnnectedToInternetTime<=1e-5):
+                  ConnnectedToInternetTime = time()
+                  print('Not connected to internet')
+               continue
+            if (last_loop) and (connected):
+               print('Connected to internet')
+            last_loop = False
 
          # Check if data folder exists
          if not os.path.isdir(data_folder_path):
