@@ -1,5 +1,5 @@
 from requests import head,get
-from pandas import read_csv,DataFrame
+from pandas import read_csv
 from time import time,sleep
 from datetime import datetime
 from tkinter import *
@@ -14,6 +14,7 @@ from filecmp import cmpfiles,cmp
 from shutil import move,rmtree
 from threading import Thread
 from re import sub
+from gc import collect
 
 ################# Horrible Mess of Global Variables #################
 global sys_path
@@ -203,8 +204,12 @@ def autoprocess():
                   ax.yaxis.grid(color='white', linestyle='-')
                   savepath = os.path.join(histogram_path,(filename+'_Histogram-'+str(j + 1)+'.png'))
                   fig.savefig(savepath,format='png')
-                  plt.close()
+                  plt.cla()
+                  plt.clf()
+                  plt.close('all')
                except:
+                  plt.cla()
+                  plt.clf()
                   plt.close('all')
                   pass
                try:            
@@ -219,8 +224,12 @@ def autoprocess():
                   ax.xaxis.grid(color='white', linestyle='-')
                   savepath = os.path.join(plots_path,(filename+'_Plot-'+str(j + 1)+'.png'))
                   fig.savefig(savepath,format='png')
-                  plt.close()
+                  plt.cla()
+                  plt.clf()
+                  plt.close('all')
                except:
+                  plt.cla()
+                  plt.clf()
                   plt.close('all')
                   pass
 
@@ -231,6 +240,7 @@ def autoprocess():
 
       autoprocess_running = False
 
+   collect()
    window.after(45000,autoprocess)
    return
 
@@ -253,18 +263,24 @@ def main():
          global last_loop
          global ConnnectedToInternetTime
          global CheckAgain
-         if (abs(CheckAgain - time()) >= 5):
+         if (abs(CheckAgain - time()) >= 2):
             CheckAgain = time()
             connected = connected_to_internet(timeout=5)
+            was_diconnected = False
             if not connected:
+               start = time()
+               was_diconnected = True
                last_loop = True
-               if (time()-ConnnectedToInternetTime>=1000) or (time()-ConnnectedToInternetTime<=1e-5):
-                  ConnnectedToInternetTime = time()
-                  print('Not connected to internet')
-               continue
-            if (last_loop) and (connected):
+               if (time()-ConnnectedToInternetTime>=1000) or (time()-ConnnectedToInternetTime<=2):
+                     ConnnectedToInternetTime = time()
+                     print('Not connected to internet')
+               while not connected:
+                     sleep(1)
+                     connected = connected_to_internet()
                print('Connected to internet')
-            last_loop = False
+               end = time()
+            if was_diconnected:
+               print(f'Time disconnected: {int(end-start)}s')
 
          # Check if data folder exists
          if not os.path.isdir(data_folder_path):
@@ -354,6 +370,7 @@ def main():
 
    global stopped 
    stopped = True
+
 
 ################# GUI Window #################
 window = Tk()
