@@ -29,9 +29,6 @@ data_folder_path = os.path.join(sys_path,'Data')
 global temp_folder
 temp_folder = os.path.join(data_folder_path,'temp')
 
-global ConnectedToInternetTimer
-ConnnectedToInternetTime = round(time(),0) + 1000
-
 global CheckAgain
 CheckAgain = time() + 1000
 
@@ -181,7 +178,7 @@ def autoprocess():
             e = datetime.now()
             failed_to_process.write(f'{filename} failed to open on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
             failed_to_process.close()
-            del data_folder,e
+            del data_folder,e,filename,dl_folder,data_path
             continue
 
          if not os.path.isdir(data_folder):
@@ -204,6 +201,7 @@ def autoprocess():
                   ax.yaxis.grid(color='white', linestyle='-')
                   savepath = os.path.join(histogram_path,(filename+'_Hist-'+str(j + 1)+'.png'))
                   fig.savefig(savepath,format='png')
+                  del savepath
                   plt.cla()
                   plt.clf()
                   plt.close('all')
@@ -224,6 +222,7 @@ def autoprocess():
                   ax.xaxis.grid(color='white', linestyle='-')
                   savepath = os.path.join(plots_path,(filename+'_Plot-'+str(j + 1)+'.png'))
                   fig.savefig(savepath,format='png')
+                  del savepath
                   plt.cla()
                   plt.clf()
                   plt.close('all')
@@ -262,7 +261,6 @@ def main():
          # The reason it's a mess is that it only needs to print once, so it keeps track of  #
          # what it was last loop and the amount of time since it was last not connected to   #
          # the internet                                                                      #
-         global ConnnectedToInternetTime
          global CheckAgain
          if (abs(CheckAgain - time()) >= 2):
             CheckAgain = time()
@@ -271,10 +269,7 @@ def main():
             if not connected:
                start = time()
                was_diconnected = True
-               last_loop = True
-               if (time()-ConnnectedToInternetTime>=1000) or (time()-ConnnectedToInternetTime<=2):
-                     ConnnectedToInternetTime = time()
-                     print('Not connected to internet')
+               print('Not connected to internet')
                while not connected:
                      sleep(1)
                      connected = connected_to_internet()
@@ -293,7 +288,7 @@ def main():
          if not os.path.isfile(websites_csv_path):
             exit('Necessary file "websites.csv" does not exist in current directory. Exiting Program.')
          else:
-         # Read in the csv with websites and info
+            # Read in the csv with websites and info
             try:
                df = read_csv(websites_csv_path,header=0)
                df = df.reset_index(drop=True)
