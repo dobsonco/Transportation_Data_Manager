@@ -39,7 +39,7 @@ global run
 run = False
 
 global stopped
-stopped = False
+stopped = True
 
 global autoprocess_running
 autoprocess_running = False
@@ -49,13 +49,17 @@ def on_start():
    '''
    This mess of a function starts the manin thread.
    '''
-   global run
-   run = True
-   global ConnectedToInternetTimer
-   ConnnectedToInternetTime = round(time(),0)
    global stopped
-   stopped = False
+   global run
+   global ConnectedToInternetTimer
    global main_thread
+
+   if (not stopped):
+      return
+
+   run = True
+   ConnnectedToInternetTime = round(time(),0)
+   stopped = False
    main_thread = Thread(target=main).start()
    print('Starting main thread')
    switch()
@@ -250,6 +254,8 @@ def main():
    '''
    while True:
       if run:
+         global stopped
+         stopped = False
          ############# This Mess Determines if You're connected to the internet ##############
          # If you're not connected it will print it to the terminal every 1000 seconds       #
          # If you reconnect it will then print that you've reconnected                       #
@@ -304,6 +310,7 @@ def main():
 
             # If theres no path or the data directory does not exist, download it
             if (info[4]=='empty') or (not os.path.isdir(dl_folder)):
+               changed_df = True
                try:
                   if not os.path.isdir(dl_folder):
                      os.mkdir(dl_folder)
@@ -313,7 +320,8 @@ def main():
                   pass
 
             # Check if enough time has passed
-            if ((round(time(),0) - info[3]) >= 100):
+            if ((round(time(),0) - info[3]) >= 000):
+               changed_df = True
                df.iloc[idx,3] = int(time()) 
 
                if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
@@ -351,8 +359,9 @@ def main():
          
          # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
 
-         # 4. Overwrite file 
-         df.to_csv(websites_csv_path,index=False)
+         # 4. Overwrite file
+         if changed_df: 
+            df.to_csv(websites_csv_path,index=False)
 
       elif not run:
          print('Exititng main thread')
@@ -363,7 +372,6 @@ def main():
          sleep(0.5)
          exit('Exiting, something really bad happened.')
 
-   global stopped 
    stopped = True
 
 
@@ -423,4 +431,4 @@ window.mainloop()
 while True: 
    sleep(0.1) 
    if stopped: 
-      exit('successfully exited program') 
+      exit('Successfully exited program') 
