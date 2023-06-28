@@ -44,9 +44,6 @@ stopped = False
 global autoprocess_running
 autoprocess_running = False
 
-global last_loop
-last_loop = False
-
 ################# Horrible Mess of Functions #################
 def on_start():
    '''
@@ -60,7 +57,7 @@ def on_start():
    stopped = False
    global main_thread
    main_thread = Thread(target=main).start()
-   print('started main thread')
+   print('Starting main thread')
    switch()
 
 def on_stop():
@@ -69,7 +66,7 @@ def on_stop():
    '''
    global run
    run = False
-
+   print('Waiting for main thread to reach stopping point')
    switch()
 
 def switch():
@@ -96,7 +93,7 @@ def connected_to_internet(url='http://www.google.com/', timeout=5):
    except:
       return False
 
-def download_url(url, save_path, chunk_size=2048, type='csv'):
+def download_url(url, save_path, chunk_size=1024, type='csv'):
    '''
    Save path is just the folder you want to download it in.
 
@@ -180,7 +177,7 @@ def autoprocess():
             e = datetime.now()
             failed_to_process.write(f'{filename} failed to open on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
             failed_to_process.close()
-            del data_folder
+            del data_folder,e
             continue
 
          if not os.path.isdir(data_folder):
@@ -189,9 +186,6 @@ def autoprocess():
             os.mkdir(histogram_path)
             plots_path = os.path.join(data_folder,'Plots')
             os.mkdir(plots_path)
-         elif os.path.isdir(data_folder):
-            del data_path,dl_folder,filename,data_folder,data
-            continue
 
          for j,col in enumerate(data):
             if (data.dtypes[j] != 'object') and (data.dtypes[j] != 'bool'):
@@ -262,7 +256,6 @@ def main():
          # The reason it's a mess is that it only needs to print once, so it keeps track of  #
          # what it was last loop and the amount of time since it was last not connected to   #
          # the internet                                                                      #
-         global last_loop
          global ConnnectedToInternetTime
          global CheckAgain
          if (abs(CheckAgain - time()) >= 2):
@@ -282,7 +275,7 @@ def main():
                print('Connected to internet')
                end = time()
             if was_diconnected:
-               print(f'Time disconnected: {int(end-start)}s')
+               print(f'Time disconnected: {end-start}s')
 
          # Check if data folder exists
          if not os.path.isdir(data_folder_path):
@@ -362,13 +355,13 @@ def main():
          df.to_csv(websites_csv_path,index=False)
 
       elif not run:
-         print('exititng main thread')
+         print('Exititng main thread')
          break
 
       else:
-         print('how did you get here?\nGonna exit the program')
+         print('How did you get here?\nGonna exit the program')
          sleep(0.5)
-         exit('Exiting')
+         exit('Exiting, something really bad happened.')
 
    global stopped 
    stopped = True
@@ -427,6 +420,7 @@ window.after(100,autoprocess)
 
 window.mainloop()
 
-while True:
-   if stopped:
-      exit('successfully exited program')
+while True: 
+   sleep(0.1) 
+   if stopped: 
+      exit('successfully exited program') 
