@@ -320,7 +320,7 @@ def main():
                   pass
 
             # Check if enough time has passed
-            if ((round(time(),0) - info[3]) >= 000):
+            if ((round(time(),0) - info[3]) >= 1000):
                changed_df = True
                df.iloc[idx,3] = int(time()) 
 
