@@ -165,6 +165,8 @@ def autoprocess():
          dl_folder = data_path[0:(len(data_path)-(len(os.path.basename(data_path))))]
          filename = os.path.basename(data_path).split(sep='.')[0]
          data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] + '_Data'))
+         histogram_path = os.path.join(data_folder,'Hist')
+         plots_path = os.path.join(data_folder,'Plots')
 
          try:
             data = read_csv(data_path,low_memory=False)
@@ -183,9 +185,7 @@ def autoprocess():
 
          if not os.path.isdir(data_folder):
             os.mkdir(data_folder)
-            histogram_path = os.path.join(data_folder,'Hist')
             os.mkdir(histogram_path)
-            plots_path = os.path.join(data_folder,'Plots')
             os.mkdir(plots_path)
 
          for j,col in enumerate(data):
@@ -305,7 +305,6 @@ def main():
 
             # If theres no path or the data directory does not exist, download it
             if (info[4]=='empty') or (not os.path.isdir(dl_folder)):
-               changed_df = True
                try:
                   if not os.path.isdir(dl_folder):
                      os.mkdir(dl_folder)
@@ -316,7 +315,6 @@ def main():
 
             # Check if enough time has passed
             if ((round(time(),0) - info[3]) >= 1000):
-               changed_df = True
                df.iloc[idx,3] = int(time()) 
 
                if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
@@ -355,8 +353,7 @@ def main():
          # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
 
          # 4. Overwrite file
-         if changed_df: 
-            df.to_csv(websites_csv_path,index=False)
+         df.to_csv(websites_csv_path,index=False)
 
       elif not run:
          print('Exititng main thread')
