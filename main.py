@@ -134,9 +134,11 @@ def autoprocess():
    global window
 
    if autoprocess_running:
+      window.after(ms=45000,func=autoprocess)
       return
    
    if not run:
+      window.after(ms=45000,func=autoprocess)
       return
    
    autoprocess_running = True
@@ -292,7 +294,7 @@ def main():
 
             if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
                try:
-                  # Download data to temp folder using url, return temp filepath and name of file
+                  # Download data to temp folder using url, return temp filepath
                   new_filepath = CoreUtils.download_url(url=info[1],save_path=temp_folder,type=info[2])
                   old_filepath = info[4]
 
@@ -309,13 +311,15 @@ def main():
                   # If files are different, move new file in temp to overwrite old file
                   # clear temp folder, delete old data folder, and process new data
                   elif not same_file:
-                     # Check to see if old file is a file or directory
+                     # Check to see if old path is a file or directory
                      if os.path.isdir(old_filepath):
                         rmtree(old_filepath)
                      elif os.path.isfile(old_filepath):
                         os.unlink(old_filepath)
+                     # Move file from temp to corresponding data folder
                      move(src=new_filepath,dst=old_filepath)
                      CoreUtils.clear_temp()
+                     # Delete old figures directory so that autoprocess can process it
                      filename = os.path.basename(old_filepath)
                      data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] + '_Data'))
                      rmtree(path=data_folder)
