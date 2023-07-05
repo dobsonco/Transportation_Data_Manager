@@ -17,20 +17,16 @@ from re import sub
 from gc import collect
 
 ################# Horrible Mess of Global Variables #################
-global sys_path
 sys_path = path[0]
 
-global websites_csv_path
 websites_csv_path = os.path.join(sys_path,'websites.csv')
 
-global data_folder_path
 data_folder_path = os.path.join(sys_path,'Data')
 
-global temp_folder
 temp_folder = os.path.join(data_folder_path,'temp')
 
 global CheckAgain
-CheckAgain = time() + 1000
+CheckAgain = int(time() + 1000)
 
 global run
 run = False
@@ -42,105 +38,81 @@ global autoprocess_running
 autoprocess_running = False
 
 ################# Horrible Mess of Functions #################
-def on_start():
-   '''
-   This mess of a function starts the manin thread.
-   '''
-   global stopped
-   global run
-   global ConnectedToInternetTimer
-   global main_thread
-
-   if (not stopped):
-      return
-
-   run = True
-   ConnnectedToInternetTime = round(time(),0)
-   stopped = False
-   main_thread = Thread(target=main).start()
-   print('Starting main thread')
-   switch()
-
-def on_stop():
-   '''
-   This function stops the main thread.
-   '''
-   global run
-   run = False
-   print('Waiting for main thread to reach stopping point')
-   switch()
-
-def switch():
-   '''
-   Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this.
-   '''
-   if (start_button["state"] == "normal") and (end_button["state"] == "normal") and (run == False):
-      start_button["state"] = "normal"
-      end_button["state"] = "disabled"
-   elif start_button["state"] == "normal":
-      start_button["state"] = "disabled"
-      end_button["state"] = "normal"
-   elif (start_button["state"] != "normal"):
-      start_button["state"] = "normal"
-      end_button["state"] = "disabled"
-
-def connected_to_internet(url='http://www.google.com/', timeout=5):
-   '''
-   Does what it says, returns true if connected to internet, else returns false.
-   '''
-   try:
-      _ = head(url, timeout=timeout)
-      return True
-   except:
-      return False
-
-def download_url(url, save_path, chunk_size=1024, type='csv'):
-   '''
-   Save path is just the folder you want to download it in.
-
-   Type must be a string, with the type of file you're downloading.
-
-   returns name of new file and its filepath. If downloaded is a zip, it will extract it and then 
-   return the path to the folder along with the name of the folder.
-   '''
-   # name = os.path.basename(save_path) + '-' + str(files_in_directory) + '.' + type
-   # filepath = os.path.join(save_path,name)
-
-   files_in_directory = len(next(os.walk(save_path), (None, None, []))[2])
-   dir_name = os.path.basename(save_path)
-   num_ = len([i for i,j in enumerate(dir_name) if j == '_'])
-   filename = '_'.join(dir_name.split(sep='_')[0:round(num_/2)]) + '-' + str(files_in_directory) + '.' + type
-   filepath = os.path.join(save_path,filename)
-
-   r = get(url, stream=True)
-   with open(filepath, 'wb') as fd:
-      for chunk in r.iter_content(chunk_size=chunk_size):
-         fd.write(chunk)
-   
-   try:
-      if type == 'zip':
-         with ZipFile(filepath,'r') as zObject:  
-            zObject.extractall(path=save_path)
-            zObject.close()
-            os.unlink(filepath)
-         filepath = max(glob(os.path.join(save_path, '*/')), key=os.path.getmtime)
-   except:
-      raise ValueError
-   return filepath
-
-def clear_temp(dir=temp_folder):
-   '''
-   Clears all files and directories from temp folder, can be used on other folders.
-   '''
-   for filename in os.listdir(dir):
-      file_path = os.path.join(dir, filename)
+class CoreUtils():
+   def connected_to_internet(url='http://www.google.com/', timeout=5):
+      '''
+      Does what it says, returns true if connected to internet, else returns false.
+      '''
       try:
-         if os.path.isfile(file_path) or os.path.islink(file_path):
-            os.unlink(file_path)
-         elif os.path.isdir(file_path):
-            rmtree(file_path)
+         _ = head(url, timeout=timeout)
+         return True
       except:
-         pass
+         return False
+
+   def download_url(url, save_path, chunk_size=1024, type='csv'):
+      '''
+      Save path is just the folder you want to download it in.
+
+      Type must be a string, with the type of file you're downloading.
+
+      returns name of new file and its filepath. If downloaded is a zip, it will extract it and then 
+      return the path to the folder along with the name of the folder.
+      '''
+      # name = os.path.basename(save_path) + '-' + str(files_in_directory) + '.' + type
+      # filepath = os.path.join(save_path,name)
+
+      files_in_directory = len(next(os.walk(save_path), (None, None, []))[2])
+      dir_name = os.path.basename(save_path)
+      num_ = len([i for i,j in enumerate(dir_name) if j == '_'])
+      filename = '_'.join(dir_name.split(sep='_')[0:round(num_/2)]) + '-' + str(files_in_directory) + '.' + type
+      filepath = os.path.join(save_path,filename)
+
+      r = get(url, stream=True)
+      with open(filepath, 'wb') as fd:
+         for chunk in r.iter_content(chunk_size=chunk_size):
+            fd.write(chunk)
+      
+      try:
+         if type == 'zip':
+            with ZipFile(filepath,'r') as zObject:  
+               zObject.extractall(path=save_path)
+               zObject.close()
+               os.unlink(filepath)
+            filepath = max(glob(os.path.join(save_path, '*/')), key=os.path.getmtime)
+      except:
+         raise ValueError
+      return filepath
+
+   def clear_temp(dir=temp_folder):
+      '''
+      Clears all files and directories from temp folder, can be used on other folders.
+      '''
+      for filename in os.listdir(dir):
+         file_path = os.path.join(dir, filename)
+         try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+               os.unlink(file_path)
+            elif os.path.isdir(file_path):
+               rmtree(file_path)
+         except:
+            pass
+   def check_internet_and_wait():
+      global CheckAgain
+      if (abs(CheckAgain - time()) >= 2):
+         CheckAgain = time()
+         connected = CoreUtils.connected_to_internet(timeout=5)
+         was_diconnected = False
+         if not connected:
+            start = time()
+            was_diconnected = True
+            print('Not connected to internet')
+            while not connected:
+               sleep(1)
+               connected = CoreUtils.connected_to_internet()
+            print('Connected to internet')
+            end = time()
+         if was_diconnected:
+            print(f'Time disconnected: {end-start}s')
 
 def autoprocess():
    '''
@@ -150,6 +122,7 @@ def autoprocess():
    No inputs are required to make this work
    '''
    global autoprocess_running
+   global window
 
    if autoprocess_running:
       return
@@ -238,9 +211,9 @@ def autoprocess():
             continue
 
       autoprocess_running = False
-
+      
    collect()
-   window.after(45000,autoprocess)
+   window.after(ms=45000,func=autoprocess)
    return
 
 def main():
@@ -261,22 +234,9 @@ def main():
          # The reason it's a mess is that it only needs to print once, so it keeps track of  #
          # what it was last loop and the amount of time since it was last not connected to   #
          # the internet                                                                      #
-         global CheckAgain
-         if (abs(CheckAgain - time()) >= 2):
-            CheckAgain = time()
-            connected = connected_to_internet(timeout=5)
-            was_diconnected = False
-            if not connected:
-               start = time()
-               was_diconnected = True
-               print('Not connected to internet')
-               while not connected:
-                     sleep(1)
-                     connected = connected_to_internet()
-               print('Connected to internet')
-               end = time()
-            if was_diconnected:
-               print(f'Time disconnected: {end-start}s')
+
+         # Check if internet is connected, if not connected then wait till it is
+         CoreUtils.check_internet_and_wait()
 
          # Check if data folder exists
          if not os.path.isdir(data_folder_path):
@@ -298,7 +258,7 @@ def main():
          # Iterate over rows of websites.csv
          for idx,info in df.iterrows():
 
-            title = sub('[^0-9a-zA-Z._:/\\\]+','', info[0].replace(' ','_')).replace('__','_')
+            title = sub('[^0-9a-zA-Z._:/\\\]+','',info[0].replace(' ','_')).replace('__','_')
             df.iloc[idx,0] = title
             
             dl_folder = os.path.join(data_folder_path,title)  
@@ -308,7 +268,7 @@ def main():
                try:
                   if not os.path.isdir(dl_folder):
                      os.mkdir(dl_folder)
-                  filepath = download_url(url=info[1],save_path=dl_folder,type=info[2])
+                  filepath = CoreUtils.download_url(url=info[1],save_path=dl_folder,type=info[2])
                   df.iloc[idx,4] = filepath
                except:
                   pass
@@ -320,7 +280,7 @@ def main():
                if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
                   try:
                      # Download data to temp folder using url, return temp filepath and name of file
-                     new_filepath = download_url(url=info[1],save_path=temp_folder,type=info[2])
+                     new_filepath = CoreUtils.download_url(url=info[1],save_path=temp_folder,type=info[2])
                      old_filepath = info[4]
 
                      # Check to see if files are the same
@@ -331,13 +291,13 @@ def main():
 
                      # If files are the same, clear temp folder
                      if same_file:
-                        clear_temp()
+                        CoreUtils.clear_temp()
 
                      # If files are different, move new file in temp to overwrite old file
                      # clear temp folder, delete old data folder, and process new data
                      elif not same_file:
                         move(src=new_filepath,dst=old_filepath)
-                        clear_temp()
+                        CoreUtils.clear_temp()
 
                         filename = os.path.basename(old_filepath)
                         data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] + '_Data'))
@@ -346,7 +306,7 @@ def main():
                      pass
 
             try:
-               clear_temp()
+               CoreUtils.clear_temp()
             except:
                pass
          
@@ -354,6 +314,7 @@ def main():
 
          # 4. Overwrite file
          df.to_csv(websites_csv_path,index=False)
+         del df
 
       elif not run:
          print('Exititng main thread')
@@ -366,58 +327,106 @@ def main():
 
    stopped = True
 
-
 ################# GUI Window #################
-window = Tk()
-window.title('Transportation Data Manager')
-window.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
+class GUI(Tk):
+   def __init__(self):
+      super().__init__()
 
-frame = Frame(window)
-frame.pack()
+      self.title('Transportation Data Manager')
+      self.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
 
-canvas = Canvas(frame, width=400, height=300, bg='#D3D3D3')
-canvas.pack()
+      self.frame = Frame(self)
+      self.frame.pack()
 
-start_label = Text(canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
-start_label.tag_configure('center',justify='center')  
-start_label.insert('1.0','When pressed, this button will start the loop')
-start_label.tag_add('center',1.0,'end')
-start_label.place(relx = 0.3, rely = 0.4,anchor=CENTER)
-start_label.config(state= DISABLED)
+      self.canvas = Canvas(self.frame, width=400, height=300, bg='#D3D3D3')
+      self.canvas.pack()
 
-start_button = Button(canvas,text="Start",command=on_start,padx=6,pady=5,highlightthickness=0)
-start_button.place(relx=0.75,rely=0.4,anchor=CENTER)
+      self.start_label = Text(self.canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
+      self.start_label.tag_configure('center',justify='center')  
+      self.start_label.insert('1.0','When pressed, this button will start the loop')
+      self.start_label.tag_add('center',1.0,'end')
+      self.start_label.place(relx = 0.3, rely = 0.4,anchor=CENTER)
+      self.start_label.config(state= DISABLED)
 
-end_label = Text(canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
-end_label.tag_configure('center',justify='center')  
-end_label.insert('1.0','When pressed, this button will end the loop')
-end_label.tag_add('center',1.0,'end')
-end_label.place(relx = 0.3, rely = 0.6,anchor=CENTER)
-end_label.config(state= DISABLED)
+      self.start_button = Button(self.canvas,text="Start",command=self.on_start,padx=6,pady=5,highlightthickness=0)
+      self.start_button.place(relx=0.75,rely=0.4,anchor=CENTER)
 
-end_button = Button(canvas,text="Stop",command=on_stop,padx=6,pady=5,highlightthickness=0)
-end_button.place(relx=0.75,rely=0.6,anchor=CENTER)
+      self.end_label = Text(self.canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
+      self.end_label.tag_configure('center',justify='center')  
+      self.end_label.insert('1.0','When pressed, this button will end the loop')
+      self.end_label.tag_add('center',1.0,'end')
+      self.end_label.place(relx = 0.3, rely = 0.6,anchor=CENTER)
+      self.end_label.config(state=DISABLED)
 
-info_label = Text(canvas,wrap=WORD,width=30,height=5,padx=6,pady=5,highlightthickness=0)
-info_label.tag_configure('center',justify='center')  
-info_label.insert('1.0','''This rudimentary GUI controls the script. New buttons and features may be added later if I can make it work''')
-info_label.tag_add('center',1.0,'end')
-info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
-info_label.config(state= DISABLED)
+      self.end_button = Button(self.canvas,text="Stop",command=self.on_stop,padx=6,pady=5,highlightthickness=0)
+      self.end_button.place(relx=0.75,rely=0.6,anchor=CENTER)
 
-resized_img = Image.open(os.path.join(sys_path,'Resources','UT_logo.png')).resize((130,100),Image.LANCZOS);
-img = ImageTk.PhotoImage(resized_img)
-canvas.create_image(350,260,image=img)
+      self.info_label = Text(self.canvas,wrap=WORD,width=30,height=4,padx=6,pady=5,highlightthickness=0)
+      self.info_label.tag_configure('center',justify='center')  
+      self.info_label.insert('1.0','''This rudimentary GUI controls the script. New buttons and features may be added later if I can make it work''')
+      self.info_label.tag_add('center',1.0,'end')
+      self.info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
+      self.info_label.config(state=DISABLED)
 
-who_made_this = Text(canvas,wrap=WORD,width=35,height=3,padx=6,pady=5,highlightthickness=0)
-who_made_this.tag_configure('center',justify='center')  
-who_made_this.insert('1.0','''This program was made by Collin Dobson for the UTORII SMaRT internship''')
-who_made_this.tag_add('center',1.0,'end')
-who_made_this.place(relx=0.35,rely = 0.85,anchor=CENTER)
-who_made_this.config(state= DISABLED)
+      self.resized_img = Image.open(os.path.join(sys_path,'Resources','UT_logo.png')).resize((130,100),Image.LANCZOS);
+      self.img = ImageTk.PhotoImage(self.resized_img)
+      self.canvas.create_image(350,260,image=self.img)
 
-window.after(100,autoprocess)
+      self.who_made_this = Text(self.canvas,wrap=WORD,width=35,height=3,padx=6,pady=5,highlightthickness=0)
+      self.who_made_this.tag_configure('center',justify='center')  
+      self.who_made_this.insert('1.0','''This program was made by Collin Dobson for the UTORII SMaRT internship''')
+      self.who_made_this.tag_add('center',1.0,'end')
+      self.who_made_this.place(relx=0.35,rely = 0.85,anchor=CENTER)
+      self.who_made_this.config(state=DISABLED)
 
+      self.after(ms=10000,func=autoprocess)
+
+   def switch(self):
+      '''
+      Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this.
+      '''
+      if (self.start_button["state"] == "normal") and (self.end_button["state"] == "normal") and (run == False):
+         self.start_button["state"] = "normal"
+         self.end_button["state"] = "disabled"
+      elif self.start_button["state"] == "normal":
+         self.start_button["state"] = "disabled"
+         self.end_button["state"] = "normal"
+      elif (self.start_button["state"] != "normal"):
+         self.start_button["state"] = "normal"
+         self.end_button["state"] = "disabled"
+
+   def on_start(self):
+      '''
+      This mess of a function starts the manin thread.
+      '''
+      global stopped
+      global run
+      global ConnectedToInternetTimer
+      global main_thread
+
+      if (not stopped):
+         return
+
+      run = True
+      ConnnectedToInternetTime = round(time(),0)
+      stopped = False
+      main_thread = Thread(target=main).start()
+      print('Starting main thread')
+      self.switch()
+
+   def on_stop(self):
+      global run
+      '''
+      This function stops the main thread.
+      '''
+      if run == False:
+         self.switch()
+         return
+      run = False
+      print('Waiting for main thread to reach stopping point')
+      self.switch()
+
+window = GUI()
 window.mainloop()
 
 while True: 
