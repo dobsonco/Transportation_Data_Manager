@@ -237,9 +237,6 @@ def main():
    '''
    while True:
       if not run:
-         continue
-
-      elif not run:
          print('Exititng main thread')
          break
 
@@ -250,12 +247,6 @@ def main():
    
       global stopped
       stopped = False
-      ############# This Mess Determines if You're connected to the internet ##############
-      # If you're not connected it will print it to the terminal every 1000 seconds       #
-      # If you reconnect it will then print that you've reconnected                       #
-      # The reason it's a mess is that it only needs to print once, so it keeps track of  #
-      # what it was last loop and the amount of time since it was last not connected to   #
-      # the internet                                                                      #
 
       # Check if internet is connected, if not connected then wait till it is
       CoreUtils.check_internet_and_wait()
