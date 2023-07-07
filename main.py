@@ -64,6 +64,7 @@ class CoreUtils():
       num_ = len([i for i,j in enumerate(dir_name) if j == '_'])
       filename = '_'.join(dir_name.split(sep='_')[0:round(num_/2)])+'-'+str(files_in_directory)+'.'+type
       filepath = os.path.join(save_path,filename)
+      del files_in_directory,dir_name,num_,filename
 
       r = get(url, stream=True)
       with open(filepath, 'wb') as fd:
@@ -77,6 +78,10 @@ class CoreUtils():
                zObject.close()
                os.unlink(filepath)
             filepath = max(glob(os.path.join(save_path,'*/')),key=os.path.getmtime)
+            try:
+               del zObject
+            except:
+               pass
       except:
          raise ValueError
       return filepath
@@ -94,6 +99,7 @@ class CoreUtils():
                rmtree(file_path)
          except:
             pass
+         del file_path
 
    def check_internet_and_wait():
       global CheckAgain
@@ -111,14 +117,17 @@ class CoreUtils():
             print('Connected to internet')
             end = time()
          if was_diconnected:
-            print(f'Time disconnected: {end-start}s')
+            print(f'Time disconnected: {end-start}s')  
+            del connected,was_diconnected,end,start
 
    def check_size(filepath,exp,ceiling=1):
       size = os.path.getsize(filepath)
       rel_size = size/(1024**exp)
-      if (size > ceiling):
+      if (rel_size > ceiling):
+         del size,rel_size
          return False
-      elif (size <= ceiling):
+      elif (rel_size <= ceiling):
+         del size,rel_size
          return True
       else:
          raise ValueError
@@ -218,10 +227,11 @@ def autoprocess():
                plt.close('all')
 
       try:
-         del data,data_path,dl_folder,filename,data,histogram_path,plots_path
+         del data,data_path,dl_folder,filename,data,histogram_path,plots_path,fig,ax
       except:
          continue
 
+   del to_process
    autoprocess_running = False
       
    collect()
@@ -236,6 +246,8 @@ def main():
    so try not to mess anything up. Use edit_websites_csv.ipynb to add entries to the csv. If you want to 
    remove an entry, you can just delete the line.
    '''
+   sleep(0.3)
+   print('Main thread started')
    while True:
       if not run:
          print('Exititng main thread')
@@ -346,6 +358,8 @@ class GUI(Tk):
    def __init__(self):
       super().__init__()
 
+      self.protocol("WM_DELETE_WINDOW",self.on_x)
+
       self.title('Transportation Data Manager')
       self.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
 
@@ -440,11 +454,19 @@ class GUI(Tk):
       run = False
       print('Waiting for main thread to reach stopping point')
       self.switch()
+   
+   def on_x(self):
+      global run
+      run = False
+      global stopped
+      stopped = True
+      self.destroy()
 
 window = GUI()
 window.mainloop()
 
 while True: 
    sleep(0.1) 
-   if stopped: 
+   if stopped:
+      del window
       exit('Successfully exited program') 
