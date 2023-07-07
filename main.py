@@ -457,9 +457,9 @@ class GUI(Tk):
    
    def on_x(self):
       global run
-      run = False
       global stopped
-      stopped = True
+      stopped = False
+      run = False
       self.destroy()
 
 window = GUI()
