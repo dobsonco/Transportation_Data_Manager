@@ -100,6 +100,7 @@ class CoreUtils():
          except:
             pass
          del file_path
+         return
 
    def check_internet_and_wait():
       global CheckAgain
@@ -350,6 +351,8 @@ def main():
       # 4. Overwrite file
       df.to_csv(websites_csv_path,index=False)
       del df
+
+      sleep(0.1)
 
    stopped = True
 
