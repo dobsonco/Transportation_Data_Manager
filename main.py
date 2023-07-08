@@ -15,6 +15,7 @@ from shutil import move,rmtree
 from threading import Thread
 from re import sub
 from gc import collect
+from random import choice
 
 ################# Horrible Mess of Global Variables #################
 sys_path = path[0]
@@ -25,7 +26,6 @@ data_folder_path = os.path.join(sys_path,'Data')
 
 temp_folder = os.path.join(data_folder_path,'temp')
 
-global CheckAgain
 CheckAgain = int(time() + 1000)
 
 global run
@@ -39,10 +39,12 @@ autoprocess_running = False
 
 ################# Horrible Mess of Functions #################
 class CoreUtils():
-   def connected_to_internet(url='http://www.google.com/',timeout=5):
+   def connected_to_internet(timeout=5):
       '''
       Does what it says, returns true if connected to internet, else returns false.
       '''
+      options = ['http://www.google.com/','https://www.wikipedia.org/','https://github.com/']
+      url = choice(options)
       try:
          _ = head(url,timeout=timeout)
          return True
@@ -100,11 +102,12 @@ class CoreUtils():
          except:
             pass
          del file_path
-         return
+      del filename
+      return
 
    def check_internet_and_wait():
       global CheckAgain
-      if (abs(CheckAgain-time()) >= 10):
+      if (abs(time()-CheckAgain) >= 5):
          CheckAgain = time()
          connected = CoreUtils.connected_to_internet(timeout=5)
          was_diconnected = False
@@ -115,11 +118,14 @@ class CoreUtils():
             while not connected:
                sleep(1)
                connected = CoreUtils.connected_to_internet()
+               if not run:
+                  return True
             print('Connected to internet')
             end = time()
          if was_diconnected:
             print(f'Time disconnected: {end-start}s')  
             del connected,was_diconnected,end,start
+      return False
 
    def check_size(filepath,exp,ceiling=1):
       size = os.path.getsize(filepath)
@@ -236,7 +242,7 @@ def autoprocess():
    autoprocess_running = False
       
    collect()
-   window.after(ms=45000,func=autoprocess)
+   window.queue_autoprocess()
    return
 
 def main():
@@ -247,8 +253,10 @@ def main():
    so try not to mess anything up. Use edit_websites_csv.ipynb to add entries to the csv. If you want to 
    remove an entry, you can just delete the line.
    '''
-   sleep(0.3)
+   sleep(0.1)
    print('Main thread started')
+   global run
+   global stopped
    while True:
       if not run:
          print('Exititng main thread')
@@ -258,12 +266,12 @@ def main():
          print('How did you get here?\nGonna exit the program')
          sleep(0.5)
          exit('Exiting, something really bad happened.')
-   
-      global stopped
-      stopped = False
 
       # Check if internet is connected, if not connected then wait till it is
-      CoreUtils.check_internet_and_wait()
+      if (CoreUtils.check_internet_and_wait()):
+         break
+
+      stopped = False
 
       # Check if data folder exists
       if not os.path.isdir(data_folder_path):
@@ -273,7 +281,11 @@ def main():
 
       # Check if websites.csv exists
       if not os.path.isfile(websites_csv_path):
-         exit('Necessary file "websites.csv" does not exist in current directory. Exiting Program.')
+         run = False
+         window.on_stop()
+         print('Necessary file "websites.csv" does not exist in current directory. Exiting main thread.')
+         continue
+
       else:
          # Read in the csv with websites and info
          try:
@@ -461,9 +473,19 @@ class GUI(Tk):
    def on_x(self):
       global run
       global stopped
-      stopped = False
+      if (CoreUtils.connected_to_internet()) and run:
+         stopped = False
+      else:
+         stopped = True
       run = False
       self.destroy()
+
+   def queue_autoprocess(self,ms=45000):
+      self.after(ms=ms,func=autoprocess)
+
+   def second_window(self):
+      secondWindow = Toplevel(self)
+      secondWindow.title('second window')
 
 window = GUI()
 window.mainloop()
