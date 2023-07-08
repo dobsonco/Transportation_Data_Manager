@@ -39,7 +39,7 @@ autoprocess_running = False
 
 ################# Horrible Mess of Functions #################
 class CoreUtils():
-   def connected_to_internet(timeout=5):
+   def connected_to_internet(timeout: int = 5) -> bool:
       '''
       Does what it says, returns true if connected to internet, else returns false.
       '''
@@ -51,7 +51,7 @@ class CoreUtils():
       except:
          return False
 
-   def download_url(url,save_path,chunk_size=1024,type='csv'):
+   def download_url(url: str,save_path: str,chunk_size = 1024,type: str ='csv') -> str:
       '''
       Save path is just the folder you want to download it in.
 
@@ -70,7 +70,7 @@ class CoreUtils():
 
       r = get(url, stream=True)
       with open(filepath, 'wb') as fd:
-         for chunk in r.iter_content(chunk_size=chunk_size):
+         for chunk in r.iter_content(chunk_size=int((chunk_size))):
             fd.write(chunk)
       
       try:
@@ -88,7 +88,7 @@ class CoreUtils():
          raise ValueError
       return filepath
 
-   def clear_temp(dir=temp_folder):
+   def clear_temp(dir: str = temp_folder):
       '''
       Clears all files and directories from temp folder, can be used on other folders.
       '''
@@ -105,9 +105,15 @@ class CoreUtils():
       del filename
       return
 
-   def check_internet_and_wait():
+   def check_internet_and_wait() -> bool:
+      '''
+      This function basically just pings websites until it gets a response, if no response
+      it will enter a loop where it checks again once a second, once it connectes it will
+      return False. If the user clicks the stop button, it will return true if it is 
+      looping
+      '''
       global CheckAgain
-      if (abs(time()-CheckAgain) >= 5):
+      if (abs(CheckAgain-time()) >= 5):
          CheckAgain = time()
          connected = CoreUtils.connected_to_internet(timeout=5)
          was_diconnected = False
@@ -127,7 +133,7 @@ class CoreUtils():
             del connected,was_diconnected,end,start
       return False
 
-   def check_size(filepath,exp,ceiling=1):
+   def check_size(filepath,exp,ceiling=1) -> bool:
       size = os.path.getsize(filepath)
       rel_size = size/(1024**exp)
       if (rel_size > ceiling):
@@ -139,7 +145,7 @@ class CoreUtils():
       else:
          raise ValueError
 
-def autoprocess():
+def autoprocess() -> None:
    '''
    Horrible Mess of a Function Held together by spit and duct tape
 
@@ -245,7 +251,7 @@ def autoprocess():
    window.queue_autoprocess()
    return
 
-def main():
+def main() -> None:
    '''
    So basically this runs on a thread and will only actually run after you press start on the GUI.
 
@@ -273,12 +279,6 @@ def main():
 
       stopped = False
 
-      # Check if data folder exists
-      if not os.path.isdir(data_folder_path):
-         print('Directory "Data" does not exist in current directory. Creating Directory.')
-         os.mkdir(path=data_folder_path)
-         os.mkdir(path=temp_folder)
-
       # Check if websites.csv exists
       if not os.path.isfile(websites_csv_path):
          run = False
@@ -286,13 +286,21 @@ def main():
          print('Necessary file "websites.csv" does not exist in current directory. Exiting main thread.')
          continue
 
-      else:
-         # Read in the csv with websites and info
-         try:
-            df = read_csv(websites_csv_path,header=0)
-            df = df.reset_index(drop=True)
-         except:
-            exit('Failed to open websites.csv. Exiting Program.')
+      # Check if data folder exists
+      if not os.path.isdir(data_folder_path):
+         print('Directory "Data" does not exist in current directory. Creating Directory.')
+         os.mkdir(path=data_folder_path)
+         os.mkdir(path=temp_folder)
+
+      # Read in the csv with websites and info
+      try:
+         df = read_csv(websites_csv_path,header=0)
+         df = df.reset_index(drop=True)
+      except:
+         run = False
+         window.on_stop()
+         print('Failed to open websites.csv, exiting main thread')
+         continue
 
       # Iterate over rows of websites.csv
       for idx,info in df.iterrows():
@@ -424,7 +432,7 @@ class GUI(Tk):
 
       self.after(ms=10000,func=autoprocess)
 
-   def switch(self):
+   def switch(self) -> None:
       '''
       Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this.
       '''
@@ -438,7 +446,7 @@ class GUI(Tk):
          self.start_button["state"] = "normal"
          self.end_button["state"] = "disabled"
 
-   def on_start(self):
+   def on_start(self) -> None:
       '''
       This mess of a function starts the manin thread.
       '''
@@ -457,7 +465,7 @@ class GUI(Tk):
       print('Starting main thread')
       self.switch()
 
-   def on_stop(self):
+   def on_stop(self) -> None:
       global run
       '''
       This function stops the main thread.
@@ -470,7 +478,7 @@ class GUI(Tk):
       print('Waiting for main thread to reach stopping point')
       self.switch()
    
-   def on_x(self):
+   def on_x(self) -> None:
       global run
       global stopped
       if (CoreUtils.connected_to_internet()) and run:
@@ -482,10 +490,6 @@ class GUI(Tk):
 
    def queue_autoprocess(self,ms=45000):
       self.after(ms=ms,func=autoprocess)
-
-   def second_window(self):
-      secondWindow = Toplevel(self)
-      secondWindow.title('second window')
 
 window = GUI()
 window.mainloop()
