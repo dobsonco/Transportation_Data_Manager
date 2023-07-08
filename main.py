@@ -264,7 +264,10 @@ def main() -> None:
    global run
    global stopped
    while True:
+      df_changed = False
+
       if not run:
+         sleep(0.1)
          print('Exititng main thread')
          break
 
@@ -301,26 +304,30 @@ def main() -> None:
          window.on_stop()
          print('Failed to open websites.csv, exiting main thread')
          continue
-
+      
       # Iterate over rows of websites.csv
       for idx,info in df.iterrows():
 
          title = sub('[^0-9a-zA-Z._:/\\\]+','',info[0].replace(' ','_')).replace('__','_')
-         df.iloc[idx,0] = title
+         if info[0] != title:
+            df_changed = True
+            df.iloc[idx,0] = title
          
          dl_folder = os.path.join(data_folder_path,title)
          del title
 
          # If theres no path or the data directory does not exist, download it
-         if (info[4]=='empty') or (not os.path.isdir(dl_folder)):
+         if ((info[4]=='empty')):
             try:
                if not os.path.isdir(dl_folder):
                   os.mkdir(dl_folder)
                filepath = CoreUtils.download_url(url=info[1],save_path=dl_folder,type=info[2])
                df.iloc[idx,4] = filepath
                del filepath
+               df_changed = True
             except:
                pass
+            continue
 
          # Check if enough time has passed
          if ((round(time(),0) - info[3]) >= 1000):
@@ -334,7 +341,7 @@ def main() -> None:
 
                   # Check to see if files are the same
                   if (info[2] == 'zip'):
-                     same_file = cmpfiles(a=new_filepath,b=old_filepath,shallow=False)
+                     same_file = cmpfiles(a=temp_folder,b=old_filepath,shallow=False)
                   else:
                      same_file = cmp(f1=new_filepath,f2=old_filepath,shallow=False)
 
@@ -358,18 +365,19 @@ def main() -> None:
                      data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0]+'_Data'))
                      rmtree(path=data_folder)
                      del same_file,data_folder,new_filepath,old_filepath
+                     df_changed = True
                except:
                   pass
-
-         try:
-            CoreUtils.clear_temp()
-         except:
-            pass
+               try:
+                  CoreUtils.clear_temp()
+               except:
+                  pass
       
       # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
 
       # 4. Overwrite file
-      df.to_csv(websites_csv_path,index=False)
+      if df_changed:
+         df.to_csv(websites_csv_path,index=False)
       del df
 
       sleep(0.1)
