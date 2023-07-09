@@ -156,11 +156,11 @@ def autoprocess() -> None:
    global window
 
    if autoprocess_running:
-      window.after(ms=45000,func=autoprocess)
+      window.queue_autoprocess()
       return
    
    if not run:
-      window.after(ms=45000,func=autoprocess)
+      window.queue_autoprocess()
       return
    
    autoprocess_running = True
@@ -169,6 +169,10 @@ def autoprocess() -> None:
    to_process = glob(data_folder_path+'/*/*.csv')
 
    for i,vals in enumerate(to_process):
+      if not run:
+         window.queue_autoprocess()
+         return
+      
       data_path = vals
       dl_folder = data_path[0:(len(data_path)-(len(os.path.basename(data_path))))]
       filename = os.path.basename(data_path).split(sep='.')[0]
@@ -264,22 +268,17 @@ def main() -> None:
    global run
    global stopped
    while True:
-      df_changed = False
 
       if not run:
          sleep(0.1)
          print('Exititng main thread')
          break
 
-      elif (not run) and (run):
-         print('How did you get here?\nGonna exit the program')
-         sleep(0.5)
-         exit('Exiting, something really bad happened.')
-
       # Check if internet is connected, if not connected then wait till it is
       if (CoreUtils.check_internet_and_wait()):
          break
-
+      
+      df_changed = False
       stopped = False
 
       # Check if websites.csv exists
@@ -307,6 +306,9 @@ def main() -> None:
       
       # Iterate over rows of websites.csv
       for idx,info in df.iterrows():
+
+         if not run:
+            break
 
          title = sub('[^0-9a-zA-Z._:/\\\]+','',info[0].replace(' ','_')).replace('__','_')
          if info[0] != title:
@@ -372,7 +374,12 @@ def main() -> None:
                   CoreUtils.clear_temp()
                except:
                   pass
-      
+
+      try:
+         CoreUtils.clear_temp()
+      except:
+         pass
+
       # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
 
       # 4. Overwrite file
@@ -386,7 +393,7 @@ def main() -> None:
 
 ################# GUI Window #################
 class GUI(Tk):
-   def __init__(self):
+   def __init__(self) -> Tk:
       super().__init__()
 
       self.protocol("WM_DELETE_WINDOW",self.on_x)
@@ -474,29 +481,25 @@ class GUI(Tk):
       self.switch()
 
    def on_stop(self) -> None:
-      global run
       '''
       This function stops the main thread.
       '''
+      global run
       if run == False:
          self.switch()
          return
-      
       run = False
-      print('Waiting for main thread to reach stopping point')
       self.switch()
    
    def on_x(self) -> None:
       global run
       global stopped
-      if (CoreUtils.connected_to_internet()) and run:
-         stopped = False
-      else:
-         stopped = True
+      if run:
+         print('Waiting for main thread to reach stopping point')
       run = False
       self.destroy()
 
-   def queue_autoprocess(self,ms=45000):
+   def queue_autoprocess(self,ms=45000) -> None:
       self.after(ms=ms,func=autoprocess)
 
 window = GUI()
