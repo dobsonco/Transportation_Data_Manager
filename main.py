@@ -354,7 +354,6 @@ def main() -> None:
 
          # Check if enough time has passed
          if (abs(round(time()) - info[3]) >= 1000):
-            print(abs(round(time()) - info[3]))
             df.iloc[idx,3] = int(time()) 
             df_changed = True
 
