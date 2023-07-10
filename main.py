@@ -165,40 +165,58 @@ def autoprocess() -> None:
    
    autoprocess_running = True
 
-   to_process = []
-   to_process = glob(data_folder_path+'/*/*.csv')
+   all_csv = []
+   all_csv = glob(data_folder_path+'/*/*.csv')
 
-   for i,vals in enumerate(to_process):
-      if not run:
-         window.queue_autoprocess()
-         return
-      
-      data_path = vals
-      dl_folder = data_path[0:(len(data_path)-(len(os.path.basename(data_path))))]
-      filename = os.path.basename(data_path).split(sep='.')[0]
+   to_process = []
+   for csv in all_csv:
+      dl_folder = csv[0:(len(csv)-(len(os.path.basename(csv))))]
+      filename = os.path.basename(csv).split(sep='.')[0]
       data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] +'_Data'))
+      a = len(dl_folder)
+      b = len(temp_folder)
+      if a >= b:
+         upper = b
+      else:
+         upper = a
+      if os.path.isdir(data_folder) or (dl_folder[0:upper] == temp_folder[0:upper]):
+         del dl_folder,filename,data_folder
+         continue
+      to_process.append((csv,data_folder,filename))
+      del dl_folder
+
+   if len(to_process) <= 0:
+      autoprocess_running = False
+      window.queue_autoprocess()
+      return
+
+   for vals in to_process:
+      if not run:
+         autoprocess_running = False
+         window.queue_autoprocess()
+         del all_csv,to_process
+         return
+
+      csv_path = vals[0]
+      data_folder = vals[1]
+      filename = vals[2]
       histogram_path = os.path.join(data_folder,'Hist')
       plots_path = os.path.join(data_folder,'Plots')
 
       try:
-         data = read_csv(data_path,low_memory=False)
+         data = read_csv(csv_path,low_memory=False)
       except:
-         if os.path.isdir(dl_folder):
-            del data_path,dl_folder,filename,data_folder,histogram_path,plots_path
-            continue
-         else: 
-            os.mkdir(data_folder)
+         os.mkdir(data_folder)
          failed_to_process = open(os.path.join(data_folder,'failed_to_process.txt'),'a')
          e = datetime.now()
          failed_to_process.write(f'{filename} failed to open on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
          failed_to_process.close()
-         del data_folder,e,filename,dl_folder,data_path,histogram_path,plots_path
+         del data_folder,e,filename,csv_path,histogram_path,plots_path
          continue
 
-      if not os.path.isdir(data_folder):
-         os.mkdir(data_folder)
-         os.mkdir(histogram_path)
-         os.mkdir(plots_path)
+      os.mkdir(data_folder)
+      os.mkdir(histogram_path)
+      os.mkdir(plots_path)
 
       for j,col in enumerate(data):
          if (data.dtypes[j] != 'object') and (data.dtypes[j] != 'bool'):
@@ -244,7 +262,7 @@ def autoprocess() -> None:
                plt.close('all')
 
       try:
-         del data,data_path,dl_folder,filename,data,histogram_path,plots_path,fig,ax
+         del data,csv_path,filename,data,histogram_path,plots_path,fig,ax
       except:
          continue
 
@@ -308,6 +326,9 @@ def main() -> None:
       for idx,info in df.iterrows():
 
          if not run:
+            df_changed = False
+            df.to_csv(websites_csv_path,index=False)
+            del df
             break
 
          title = sub('[^0-9a-zA-Z._:/\\\]+','',info[0].replace(' ','_')).replace('__','_')
@@ -332,8 +353,10 @@ def main() -> None:
             continue
 
          # Check if enough time has passed
-         if ((round(time(),0) - info[3]) >= 1000):
+         if (abs(round(time()) - info[3]) >= 1000):
+            print(abs(round(time()) - info[3]))
             df.iloc[idx,3] = int(time()) 
+            df_changed = True
 
             if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
                try:
@@ -383,12 +406,16 @@ def main() -> None:
       # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
 
       # 4. Overwrite file
-      if df_changed:
-         df.to_csv(websites_csv_path,index=False)
-      del df
+      try:
+         if df_changed:
+            df.to_csv(websites_csv_path,index=False)
+         del df
+      except:
+         pass
 
       sleep(0.1)
 
+   print("Exited main thread")
    stopped = True
 
 ################# GUI Window #################
@@ -488,6 +515,7 @@ class GUI(Tk):
       if run == False:
          self.switch()
          return
+      print('Waiting for main thread to reach stopping point')
       run = False
       self.switch()
    
