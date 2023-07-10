@@ -37,6 +37,15 @@ stopped = True
 global autoprocess_running
 autoprocess_running = False
 
+global autoprocess_ran
+autoprocess_ran = True
+
+global last_loop
+last_loop = False
+
+global to_process
+to_process = []
+
 ################# Horrible Mess of Functions #################
 class CoreUtils():
    def connected_to_internet(timeout: int = 5) -> bool:
@@ -154,47 +163,23 @@ def autoprocess() -> None:
    '''
    global autoprocess_running
    global window
+   global autoprocess_ran
+   global to_process
 
-   if autoprocess_running:
-      window.queue_autoprocess()
-      return
-   
-   if not run:
+   if (len(to_process) <= 0) or (not run) or (autoprocess_running):
+      autoprocess_running = False
       window.queue_autoprocess()
       return
    
    autoprocess_running = True
 
-   all_csv = []
-   all_csv = glob(data_folder_path+'/*/*.csv')
+   while len(to_process) > 0:
+      vals = to_process.pop()
 
-   to_process = []
-   for csv in all_csv:
-      dl_folder = csv[0:(len(csv)-(len(os.path.basename(csv))))]
-      filename = os.path.basename(csv).split(sep='.')[0]
-      data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] +'_Data'))
-      a = len(dl_folder)
-      b = len(temp_folder)
-      if a >= b:
-         upper = b
-      else:
-         upper = a
-      if os.path.isdir(data_folder) or (dl_folder[0:upper] == temp_folder[0:upper]):
-         del dl_folder,filename,data_folder
-         continue
-      to_process.append((csv,data_folder,filename))
-      del dl_folder
-
-   if len(to_process) <= 0:
-      autoprocess_running = False
-      window.queue_autoprocess()
-      return
-
-   for vals in to_process:
       if not run:
          autoprocess_running = False
          window.queue_autoprocess()
-         del all_csv,to_process
+         del to_process
          return
 
       csv_path = vals[0]
@@ -266,8 +251,8 @@ def autoprocess() -> None:
       except:
          continue
 
-   del to_process
    autoprocess_running = False
+   autoprocess_ran = True
       
    collect()
    window.queue_autoprocess()
@@ -285,6 +270,10 @@ def main() -> None:
    print('Main thread started')
    global run
    global stopped
+   global autoprocess_running
+   global autoprocess_ran
+   global last_loop
+   global to_process
    while True:
 
       if not run:
@@ -295,9 +284,6 @@ def main() -> None:
       # Check if internet is connected, if not connected then wait till it is
       if (CoreUtils.check_internet_and_wait()):
          break
-      
-      df_changed = False
-      stopped = False
 
       # Check if websites.csv exists
       if not os.path.isfile(websites_csv_path):
@@ -321,7 +307,10 @@ def main() -> None:
          window.on_stop()
          print('Failed to open websites.csv, exiting main thread')
          continue
-      
+   
+      df_changed = False
+      stopped = False
+
       # Iterate over rows of websites.csv
       for idx,info in df.iterrows():
 
@@ -346,6 +335,7 @@ def main() -> None:
                   os.mkdir(dl_folder)
                filepath = CoreUtils.download_url(url=info[1],save_path=dl_folder,type=info[2])
                df.iloc[idx,4] = filepath
+               df.iloc[idx,3] = int(time())
                del filepath
                df_changed = True
             except:
@@ -353,7 +343,7 @@ def main() -> None:
             continue
 
          # Check if enough time has passed
-         if (abs(round(time()) - info[3]) >= 1000):
+         if (abs(round(time()) - info[3]) >= 10000):
             df.iloc[idx,3] = int(time()) 
             df_changed = True
 
@@ -412,7 +402,40 @@ def main() -> None:
       except:
          pass
 
-      sleep(0.1)
+      if (not autoprocess_running) and (last_loop != autoprocess_ran) and (len(to_process) <= 0):
+         autoprocess_ran = False
+         last_loop = True
+
+         all_csv = []
+         all_csv = glob(data_folder_path+'/*/*.csv')
+
+         all_unprocessed = []
+         for csv in all_csv:
+            dl_folder = csv[0:(len(csv)-(len(os.path.basename(csv))))]
+            filename = os.path.basename(csv).split(sep='.')[0]
+            data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] +'_Data'))
+            a = len(dl_folder)
+            b = len(temp_folder)
+            if a >= b:
+               upper = b
+            else:
+               upper = a
+            if os.path.isdir(data_folder) or (dl_folder[0:upper] == temp_folder[0:upper]):
+               del dl_folder,filename,data_folder
+               continue
+            all_unprocessed.append((csv,data_folder,filename))
+            del dl_folder
+
+         if (len(all_unprocessed) >= 5):
+            for i in range(5):
+               to_process.append(all_unprocessed.pop())
+         elif (len(all_unprocessed) < 5) and (len(all_unprocessed) > 0):
+            while (len(all_unprocessed) > 0):
+               to_process.append(all_unprocessed.pop())
+      else:
+         last_loop = False
+
+      sleep(0.2)
 
    print("Exited main thread")
    stopped = True
