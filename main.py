@@ -17,6 +17,7 @@ from re import sub
 from gc import collect
 from random import choice
 from pandastable import Table
+
 ################# Horrible Mess of Global Variables #################
 sys_path = path[0]
 
@@ -33,9 +34,6 @@ run = False
 
 global stopped
 stopped = True
-
-global autoprocess_running
-autoprocess_running = False
 
 ################# Horrible Mess of Functions #################
 class CoreUtils():
@@ -152,16 +150,12 @@ def autoprocess() -> None:
    Call this function to process any and all csv's in the data folder
    No inputs are required to make this work
    '''
-   global autoprocess_running
    global window
 
-   if (not run) or (autoprocess_running):
-      autoprocess_running = False
+   if (not run):
       window.queue_autoprocess()
       return
-
-   autoprocess_running = True
-
+   
    all_csv = []
    all_csv = glob(data_folder_path+'/*/*.csv')
 
@@ -196,7 +190,6 @@ def autoprocess() -> None:
       vals = to_process.pop()
 
       if not run:
-         autoprocess_running = False
          window.queue_autoprocess()
          del to_process
          return
@@ -270,8 +263,6 @@ def autoprocess() -> None:
       except:
          continue
 
-   autoprocess_running = False
-
    collect()
    window.queue_autoprocess()
    return
@@ -288,7 +279,6 @@ def main() -> None:
    print('Main thread started')
    global run
    global stopped
-   global autoprocess_running
    while True:
 
       if not run:
