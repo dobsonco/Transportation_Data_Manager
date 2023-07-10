@@ -37,15 +37,6 @@ stopped = True
 global autoprocess_running
 autoprocess_running = False
 
-global autoprocess_ran
-autoprocess_ran = True
-
-global last_loop
-last_loop = False
-
-global to_process
-to_process = []
-
 ################# Horrible Mess of Functions #################
 class CoreUtils():
    def connected_to_internet(timeout: int = 5) -> bool:
@@ -163,15 +154,43 @@ def autoprocess() -> None:
    '''
    global autoprocess_running
    global window
-   global autoprocess_ran
-   global to_process
 
-   if (len(to_process) <= 0) or (not run) or (autoprocess_running):
+   if (not run) or (autoprocess_running):
       autoprocess_running = False
       window.queue_autoprocess()
       return
    
    autoprocess_running = True
+
+   all_csv = []
+   all_csv = glob(data_folder_path+'/*/*.csv')
+
+   to_process = []
+   all_unprocessed = []
+   for csv in all_csv:
+      dl_folder = csv[0:(len(csv)-(len(os.path.basename(csv))))]
+      filename = os.path.basename(csv).split(sep='.')[0]
+      data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] +'_Data'))
+      a = len(dl_folder)
+      b = len(temp_folder)
+      if a >= b:
+         upper = b
+      else:
+         upper = a
+      if os.path.isdir(data_folder) or (dl_folder[0:upper] == temp_folder[0:upper]):
+         del dl_folder,filename,data_folder
+         continue
+      all_unprocessed.append((csv,data_folder,filename))
+      del dl_folder
+      if len(all_unprocessed) >= 5:
+         break
+
+   if (len(all_unprocessed) >= 5):
+      for i in range(5):
+         to_process.append(all_unprocessed.pop())
+   elif (len(all_unprocessed) < 5) and (len(all_unprocessed) > 0):
+      while (len(all_unprocessed) > 0):
+         to_process.append(all_unprocessed.pop())
 
    while len(to_process) > 0:
       vals = to_process.pop()
@@ -252,7 +271,6 @@ def autoprocess() -> None:
          continue
 
    autoprocess_running = False
-   autoprocess_ran = True
       
    collect()
    window.queue_autoprocess()
@@ -271,9 +289,6 @@ def main() -> None:
    global run
    global stopped
    global autoprocess_running
-   global autoprocess_ran
-   global last_loop
-   global to_process
    while True:
 
       if not run:
@@ -401,39 +416,6 @@ def main() -> None:
          del df
       except:
          pass
-
-      if (not autoprocess_running) and (last_loop != autoprocess_ran) and (len(to_process) <= 0):
-         autoprocess_ran = False
-         last_loop = True
-
-         all_csv = []
-         all_csv = glob(data_folder_path+'/*/*.csv')
-
-         all_unprocessed = []
-         for csv in all_csv:
-            dl_folder = csv[0:(len(csv)-(len(os.path.basename(csv))))]
-            filename = os.path.basename(csv).split(sep='.')[0]
-            data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] +'_Data'))
-            a = len(dl_folder)
-            b = len(temp_folder)
-            if a >= b:
-               upper = b
-            else:
-               upper = a
-            if os.path.isdir(data_folder) or (dl_folder[0:upper] == temp_folder[0:upper]):
-               del dl_folder,filename,data_folder
-               continue
-            all_unprocessed.append((csv,data_folder,filename))
-            del dl_folder
-
-         if (len(all_unprocessed) >= 5):
-            for i in range(5):
-               to_process.append(all_unprocessed.pop())
-         elif (len(all_unprocessed) < 5) and (len(all_unprocessed) > 0):
-            while (len(all_unprocessed) > 0):
-               to_process.append(all_unprocessed.pop())
-      else:
-         last_loop = False
 
       sleep(0.2)
 
