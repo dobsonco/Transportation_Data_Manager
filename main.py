@@ -16,7 +16,7 @@ from threading import Thread
 from re import sub
 from gc import collect
 from random import choice
-
+from pandastable import Table
 ################# Horrible Mess of Global Variables #################
 sys_path = path[0]
 
@@ -57,7 +57,7 @@ class CoreUtils():
 
       Type must be a string, with the type of file you're downloading.
 
-      returns name of new file and its filepath. If downloaded is a zip, it will extract it and then 
+      returns name of new file and its filepath. If downloaded is a zip, it will extract it and then
       return the path to the folder along with the name of the folder.
       '''
 
@@ -72,10 +72,10 @@ class CoreUtils():
       with open(filepath, 'wb') as fd:
          for chunk in r.iter_content(chunk_size=int((chunk_size))):
             fd.write(chunk)
-      
+
       try:
          if type == 'zip':
-            with ZipFile(filepath,'r') as zObject:  
+            with ZipFile(filepath,'r') as zObject:
                zObject.extractall(path=save_path)
                zObject.close()
                os.unlink(filepath)
@@ -109,7 +109,7 @@ class CoreUtils():
       '''
       This function basically just pings websites until it gets a response, if no response
       it will enter a loop where it checks again once a second, once it connectes it will
-      return False. If the user clicks the stop button, it will return true if it is 
+      return False. If the user clicks the stop button, it will return true if it is
       looping
       '''
       global CheckAgain
@@ -129,7 +129,7 @@ class CoreUtils():
             print('Connected to internet')
             end = time()
          if was_diconnected:
-            print(f'Time disconnected: {end-start}s')  
+            print(f'Time disconnected: {end-start}s')
             del connected,was_diconnected,end,start
       return False
 
@@ -159,7 +159,7 @@ def autoprocess() -> None:
       autoprocess_running = False
       window.queue_autoprocess()
       return
-   
+
    autoprocess_running = True
 
    all_csv = []
@@ -224,7 +224,7 @@ def autoprocess() -> None:
 
       for j,col in enumerate(data):
          if (data.dtypes[j] != 'object') and (data.dtypes[j] != 'bool'):
-            try:            
+            try:
                fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
                plt.switch_backend('agg')
                ax.hist(array(data[col]))
@@ -244,7 +244,7 @@ def autoprocess() -> None:
                plt.clf()
                plt.close('all')
 
-            try:            
+            try:
                fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
                plt.switch_backend('agg')
                ax.plot([idx+1 for idx,j in enumerate(data[col])],array(data[col]))
@@ -271,7 +271,7 @@ def autoprocess() -> None:
          continue
 
    autoprocess_running = False
-      
+
    collect()
    window.queue_autoprocess()
    return
@@ -280,8 +280,8 @@ def main() -> None:
    '''
    So basically this runs on a thread and will only actually run after you press start on the GUI.
 
-   This is the core loop that handles the data and determines where data goes. Reads websites.csv, 
-   so try not to mess anything up. Use edit_websites_csv.ipynb to add entries to the csv. If you want to 
+   This is the core loop that handles the data and determines where data goes. Reads websites.csv,
+   so try not to mess anything up. Use edit_websites_csv.ipynb to add entries to the csv. If you want to
    remove an entry, you can just delete the line.
    '''
    sleep(0.1)
@@ -322,7 +322,7 @@ def main() -> None:
          window.on_stop()
          print('Failed to open websites.csv, exiting main thread')
          continue
-   
+
       df_changed = False
       stopped = False
 
@@ -339,7 +339,7 @@ def main() -> None:
          if info[0] != title:
             df_changed = True
             df.iloc[idx,0] = title
-         
+
          dl_folder = os.path.join(data_folder_path,title)
          del title
 
@@ -359,7 +359,7 @@ def main() -> None:
 
          # Check if enough time has passed
          if (abs(round(time()) - info[3]) >= 10000):
-            df.iloc[idx,3] = int(time()) 
+            df.iloc[idx,3] = int(time())
             df_changed = True
 
             if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
@@ -439,7 +439,7 @@ class GUI(Tk):
       self.canvas.pack()
 
       self.start_label = Text(self.canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
-      self.start_label.tag_configure('center',justify='center')  
+      self.start_label.tag_configure('center',justify='center')
       self.start_label.insert('1.0','When pressed, this button will start the loop')
       self.start_label.tag_add('center',1.0,'end')
       self.start_label.place(relx = 0.35, rely = 0.4,anchor=CENTER)
@@ -449,7 +449,7 @@ class GUI(Tk):
       self.start_button.place(relx=0.8,rely=0.4,anchor=CENTER)
 
       self.end_label = Text(self.canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
-      self.end_label.tag_configure('center',justify='center')  
+      self.end_label.tag_configure('center',justify='center')
       self.end_label.insert('1.0','When pressed, this button will end the loop')
       self.end_label.tag_add('center',1.0,'end')
       self.end_label.place(relx = 0.35, rely = 0.6,anchor=CENTER)
@@ -459,7 +459,7 @@ class GUI(Tk):
       self.end_button.place(relx=0.8,rely=0.6,anchor=CENTER)
 
       self.info_label = Text(self.canvas,wrap=WORD,width=30,height=4,padx=6,pady=5,highlightthickness=0)
-      self.info_label.tag_configure('center',justify='center')  
+      self.info_label.tag_configure('center',justify='center')
       self.info_label.insert('1.0','''This rudimentary GUI controls the script. New buttons and features may be added later if I can make it work''')
       self.info_label.tag_add('center',1.0,'end')
       self.info_label.place(relx=0.5, rely = 0.15,anchor=CENTER)
@@ -470,13 +470,31 @@ class GUI(Tk):
       self.canvas.create_image(375,260,image=self.img)
 
       self.who_made_this = Text(self.canvas,wrap=WORD,width=35,height=3,padx=6,pady=5,highlightthickness=0)
-      self.who_made_this.tag_configure('center',justify='center')  
+      self.who_made_this.tag_configure('center',justify='center')
       self.who_made_this.insert('1.0','''This program was made by Collin Dobson for the UTORII SMaRT internship''')
       self.who_made_this.tag_add('center',1.0,'end')
       self.who_made_this.place(relx=0.399,rely = 0.85,anchor=CENTER)
       self.who_made_this.config(state=DISABLED)
 
       self.after(ms=10000,func=autoprocess)
+
+      self.window2 = Toplevel(master=self,bg='#D3D3D3')
+      self.window2.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
+      self.window2.title('Websites.csv')
+
+      self.f = Frame(self.window2,height=1000,width=1600,bg='#D3D3D3')
+      self.f.pack(fill=BOTH,expand=1)
+      self.data = read_csv(websites_csv_path,header=0)
+      self.pt = Table(self.f,dataframe=self.data,showtoolbar=False,showstatusbar=False)
+      self.pt.show()
+
+      self.window2.after(ms=10000,func=self.update)
+
+   def update(self):
+      self.data = read_csv(websites_csv_path,header = 0)
+      self.pt.model.df = self.data
+      self.pt.redraw()
+      self.window2.after(5000,self.update)
 
    def switch(self) -> None:
       '''
@@ -522,7 +540,7 @@ class GUI(Tk):
       print('Waiting for main thread to reach stopping point')
       run = False
       self.switch()
-   
+
    def on_x(self) -> None:
       global run
       global stopped
@@ -537,8 +555,8 @@ class GUI(Tk):
 window = GUI()
 window.mainloop()
 
-while True: 
-   sleep(0.1) 
+while True:
+   sleep(0.1)
    if stopped:
       del window
-      exit('Successfully exited program') 
+      exit('Successfully exited program')
