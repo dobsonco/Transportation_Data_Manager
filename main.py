@@ -1,6 +1,6 @@
 from requests import head,get
 from pandas import read_csv
-from time import time,sleep
+from time import time,sleep,localtime
 from datetime import datetime
 from tkinter import *
 from PIL import ImageTk,Image
@@ -16,6 +16,8 @@ from threading import Thread
 from re import sub
 from gc import collect
 from random import choice
+from datetime import datetime
+from tzlocal import get_localzone
 from pandastable import Table
 
 ################# Horrible Mess of Global Variables #################
@@ -142,6 +144,146 @@ class CoreUtils():
          return True
       else:
          raise ValueError
+      
+   def main() -> None:
+      '''
+      So basically this runs on a thread and will only actually run after you press start on the GUI.
+
+      This is the core loop that handles the data and determines where data goes. Reads websites.csv,
+      so try not to mess anything up. Use edit_websites_csv.ipynb to add entries to the csv. If you want to
+      remove an entry, you can just delete the line.
+      '''
+      sleep(0.1)
+      print('Main thread started')
+      global run
+      global stopped
+      while True:
+
+         if (not run) or (CoreUtils.check_internet_and_wait()):
+            sleep(0.1)
+            print('Exititng main thread')
+            break
+
+         # Check if websites.csv exists
+         if not os.path.isfile(websites_csv_path):
+            run = False
+            window.on_stop()
+            print('Necessary file "websites.csv" does not exist in current directory. Exiting main thread.')
+            continue
+
+         # Check if data folder exists
+         if not os.path.isdir(data_folder_path):
+            print('Directory "Data" does not exist in current directory. Creating Directory.')
+            os.mkdir(path=data_folder_path)
+            os.mkdir(path=temp_folder)
+
+         # Read in the csv with websites and info
+         try:
+            df = read_csv(websites_csv_path,header=0)
+            df = df.reset_index(drop=True)
+            df_changed = False
+            stopped = False
+         except:
+            run = False
+            window.on_stop()
+            print('Failed to open websites.csv, exiting main thread')
+            continue
+
+         # Iterate over rows of websites.csv
+         for idx,info in df.iterrows():
+
+            if not run:
+               df_changed = False
+               df.to_csv(websites_csv_path,index=False)
+               del df
+               break
+
+            title = sub('[^0-9a-zA-Z._:/\\\]+','',info[0].replace(' ','_')).replace('__','_')
+            if info[0] != title:
+               df_changed = True
+               df.iloc[idx,0] = title
+
+            dl_folder = os.path.join(data_folder_path,title)
+            del title
+
+            # If theres no path or the data directory does not exist, download it
+            if ((info[4]=='empty')):
+               try:
+                  if not os.path.isdir(dl_folder):
+                     os.mkdir(dl_folder)
+                  filepath = CoreUtils.download_url(url=info[1],save_path=dl_folder,type=info[2])
+                  df.iloc[idx,4] = filepath
+                  df.iloc[idx,3] = int(time())
+                  del filepath
+                  df_changed = True
+               except:
+                  pass
+               continue
+
+            # Check if enough time has passed
+            if (abs(round(time()) - info[3]) >= 10000):
+               df.iloc[idx,3] = int(time())
+               df_changed = True
+
+               if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
+                  try:
+                     # Download data to temp folder using url, return temp filepath
+                     new_filepath = CoreUtils.download_url(url=info[1],save_path=temp_folder,type=info[2])
+                     old_filepath = info[4]
+
+                     # Check to see if files are the same
+                     if (info[2] == 'zip'):
+                        same_file = cmpfiles(a=temp_folder,b=old_filepath,shallow=False)
+                     else:
+                        same_file = cmp(f1=new_filepath,f2=old_filepath,shallow=False)
+
+                     # If files are the same, clear temp folder
+                     if same_file:
+                        CoreUtils.clear_temp()
+
+                     # If files are different, move new file in temp to overwrite old file
+                     # clear temp folder, delete old data folder, and process new data
+                     elif not same_file:
+                        # Check to see if old path is a file or directory
+                        if os.path.isdir(old_filepath):
+                           rmtree(old_filepath)
+                        elif os.path.isfile(old_filepath):
+                           os.unlink(old_filepath)
+                        # Move file from temp to corresponding data folder
+                        move(src=new_filepath,dst=old_filepath)
+                        CoreUtils.clear_temp()
+                        # Delete old figures directory so that autoprocess can process it
+                        filename = os.path.basename(old_filepath)
+                        data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0]+'_Data'))
+                        rmtree(path=data_folder)
+                        del same_file,data_folder,new_filepath,old_filepath
+                        df_changed = True
+                  except:
+                     pass
+                  try:
+                     CoreUtils.clear_temp()
+                  except:
+                     pass
+
+         try:
+            CoreUtils.clear_temp()
+         except:
+            pass
+
+         # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
+
+         # 4. Overwrite file
+         try:
+            if df_changed:
+               df.to_csv(websites_csv_path,index=False)
+            del df
+         except:
+            pass
+
+         sleep(0.2)
+
+      print("Exited main thread")
+      stopped = True
 
 def autoprocess() -> None:
    '''
@@ -267,146 +409,6 @@ def autoprocess() -> None:
    window.queue_autoprocess()
    return
 
-def main() -> None:
-   '''
-   So basically this runs on a thread and will only actually run after you press start on the GUI.
-
-   This is the core loop that handles the data and determines where data goes. Reads websites.csv,
-   so try not to mess anything up. Use edit_websites_csv.ipynb to add entries to the csv. If you want to
-   remove an entry, you can just delete the line.
-   '''
-   sleep(0.1)
-   print('Main thread started')
-   global run
-   global stopped
-   while True:
-
-      if (not run) or (CoreUtils.check_internet_and_wait()):
-         sleep(0.1)
-         print('Exititng main thread')
-         break
-
-      # Check if websites.csv exists
-      if not os.path.isfile(websites_csv_path):
-         run = False
-         window.on_stop()
-         print('Necessary file "websites.csv" does not exist in current directory. Exiting main thread.')
-         continue
-
-      # Check if data folder exists
-      if not os.path.isdir(data_folder_path):
-         print('Directory "Data" does not exist in current directory. Creating Directory.')
-         os.mkdir(path=data_folder_path)
-         os.mkdir(path=temp_folder)
-
-      # Read in the csv with websites and info
-      try:
-         df = read_csv(websites_csv_path,header=0)
-         df = df.reset_index(drop=True)
-         df_changed = False
-         stopped = False
-      except:
-         run = False
-         window.on_stop()
-         print('Failed to open websites.csv, exiting main thread')
-         continue
-
-      # Iterate over rows of websites.csv
-      for idx,info in df.iterrows():
-
-         if not run:
-            df_changed = False
-            df.to_csv(websites_csv_path,index=False)
-            del df
-            break
-
-         title = sub('[^0-9a-zA-Z._:/\\\]+','',info[0].replace(' ','_')).replace('__','_')
-         if info[0] != title:
-            df_changed = True
-            df.iloc[idx,0] = title
-
-         dl_folder = os.path.join(data_folder_path,title)
-         del title
-
-         # If theres no path or the data directory does not exist, download it
-         if ((info[4]=='empty')):
-            try:
-               if not os.path.isdir(dl_folder):
-                  os.mkdir(dl_folder)
-               filepath = CoreUtils.download_url(url=info[1],save_path=dl_folder,type=info[2])
-               df.iloc[idx,4] = filepath
-               df.iloc[idx,3] = int(time())
-               del filepath
-               df_changed = True
-            except:
-               pass
-            continue
-
-         # Check if enough time has passed
-         if (abs(round(time()) - info[3]) >= 10000):
-            df.iloc[idx,3] = int(time())
-            df_changed = True
-
-            if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
-               try:
-                  # Download data to temp folder using url, return temp filepath
-                  new_filepath = CoreUtils.download_url(url=info[1],save_path=temp_folder,type=info[2])
-                  old_filepath = info[4]
-
-                  # Check to see if files are the same
-                  if (info[2] == 'zip'):
-                     same_file = cmpfiles(a=temp_folder,b=old_filepath,shallow=False)
-                  else:
-                     same_file = cmp(f1=new_filepath,f2=old_filepath,shallow=False)
-
-                  # If files are the same, clear temp folder
-                  if same_file:
-                     CoreUtils.clear_temp()
-
-                  # If files are different, move new file in temp to overwrite old file
-                  # clear temp folder, delete old data folder, and process new data
-                  elif not same_file:
-                     # Check to see if old path is a file or directory
-                     if os.path.isdir(old_filepath):
-                        rmtree(old_filepath)
-                     elif os.path.isfile(old_filepath):
-                        os.unlink(old_filepath)
-                     # Move file from temp to corresponding data folder
-                     move(src=new_filepath,dst=old_filepath)
-                     CoreUtils.clear_temp()
-                     # Delete old figures directory so that autoprocess can process it
-                     filename = os.path.basename(old_filepath)
-                     data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0]+'_Data'))
-                     rmtree(path=data_folder)
-                     del same_file,data_folder,new_filepath,old_filepath
-                     df_changed = True
-               except:
-                  pass
-               try:
-                  CoreUtils.clear_temp()
-               except:
-                  pass
-
-      try:
-         CoreUtils.clear_temp()
-      except:
-         pass
-
-      # 3. Check to see if user asked for entry to be deleted <- Not sure if this will get implemented
-
-      # 4. Overwrite file
-      try:
-         if df_changed:
-            df.to_csv(websites_csv_path,index=False)
-         del df
-      except:
-         pass
-
-      sleep(0.2)
-
-   print("Exited main thread")
-   stopped = True
-
 ################# GUI Window #################
 class GUI(Tk):
    def __init__(self) -> Tk:
@@ -483,15 +485,19 @@ class GUI(Tk):
 
       self.f = Frame(self.monitor,height=1000,width=1600,bg='#D3D3D3')
       self.f.pack(fill=BOTH,expand=1)
-      self.data = read_csv(websites_csv_path,header=0)
-      self.pt = Table(self.f,dataframe=self.data,showtoolbar=False,showstatusbar=False)
+      data = read_csv(websites_csv_path,header=0)
+      tz = get_localzone()
+      data.iloc[:,3] = [datetime.fromtimestamp(unix_timestamp, tz).strftime("%D %H:%M") for unix_timestamp in data.iloc[:,3]]
+      self.pt = Table(self.f,dataframe=data,showtoolbar=False,showstatusbar=False)
       self.pt.show()
 
       self.monitor.after(ms=10000,func=self.update_monitor)
 
    def update_monitor(self):
-      self.data = read_csv(websites_csv_path,header = 0)
-      self.pt.model.df = self.data
+      data = read_csv(websites_csv_path,header=0)
+      tz = get_localzone()
+      data.iloc[:,3] = [datetime.fromtimestamp(unix_timestamp, tz).strftime("%D %H:%M") for unix_timestamp in data.iloc[:,3]]
+      self.pt.model.df = data
       self.pt.redraw()
       self.monitor.after(5000,self.update_monitor)
 
@@ -528,7 +534,7 @@ class GUI(Tk):
       run = True
       ConnnectedToInternetTime = round(time(),0)
       stopped = False
-      main_thread = Thread(target=main).start()
+      main_thread = Thread(target=CoreUtils.main).start()
       print('Starting main thread')
       self.switch()
 
