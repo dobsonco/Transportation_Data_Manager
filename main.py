@@ -1,6 +1,6 @@
 from requests import head,get
 from pandas import read_csv
-from time import time,sleep,localtime
+from time import time,sleep
 from datetime import datetime
 from tkinter import *
 from PIL import ImageTk,Image
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from numpy import array
 from zipfile import ZipFile
 from glob import glob
-from filecmp import cmpfiles,cmp
+from filecmp import cmp,cmpfiles,clear_cache
 from shutil import move,rmtree
 from threading import Thread
 from re import sub
@@ -20,7 +20,7 @@ from datetime import datetime
 from tzlocal import get_localzone
 from pandastable import Table
 
-################# Horrible Mess of Global Variables #################
+################# Global Variables #################
 sys_path = path[0]
 
 websites_csv_path = os.path.join(sys_path,'websites.csv')
@@ -35,9 +35,6 @@ class CoreUtils(object):
       self.run = False
       self.stopped = True
       self.CheckAgain = int(time() + 1000)
-   
-   def destroy(self):
-      del self
 
    def set_run(self):
       self.run = True
@@ -60,6 +57,46 @@ class CoreUtils(object):
       except:
          return False
 
+   def download_url_thread(self,url: str,save_path: str,type: str,index: int) -> None:
+      '''
+      Save path is just the folder you want to download it in.
+
+      Type must be a string, with the type of file you're downloading.
+
+      returns name of new file and its filepath. If downloaded is a zip, it will extract it and then
+      return the path to the folder along with the name of the folder.
+      '''
+      if (self.check_internet_and_wait(check_now=True)):
+         raise InterruptedError
+      
+      dir_name = os.path.basename(save_path)
+      num_ = len([i for i,j in enumerate(dir_name) if j == '_'])
+      filename = '_'.join(dir_name.split(sep='_')[0:round(num_/2)])+'-'+str(index)+'.'+type
+      filepath = os.path.join(save_path,filename)
+      del dir_name,num_,filename
+
+      r = get(url, stream=True)
+      with open(filepath, 'wb') as fd:
+         for chunk in r.iter_content(chunk_size=1024):
+            fd.write(chunk)
+
+      try:
+         if type == 'zip':
+            with ZipFile(filepath,'r') as zObject:
+               zObject.extractall(path=save_path)
+               zObject.close()
+               os.unlink(filepath)
+            filepath = max(glob(os.path.join(save_path,'*/')),key=os.path.getmtime)
+            try:
+               del zObject
+            except:
+               pass
+      except:
+         raise ValueError
+      
+      self.df.iloc[index,3] = int(time())
+      self.df.iloc[index,4] = filepath
+   
    def download_url(self,url: str,save_path: str,chunk_size = 1024,type: str ='csv') -> str:
       '''
       Save path is just the folder you want to download it in.
@@ -114,14 +151,14 @@ class CoreUtils(object):
       del filename
       return
 
-   def check_internet_and_wait(self) -> bool:
+   def check_internet_and_wait(self,check_now = False) -> bool:
       '''
       This function basically just pings websites until it gets a response, if no response
       it will enter a loop where it checks again once a second, once it connectes it will
       return False. If the user clicks the stop button, it will return true if it is
       looping
       '''
-      if (abs(self.CheckAgain-time()) >= 5):
+      if (abs(self.CheckAgain-time()) >= 5) or (check_now):
          self.CheckAgain = time()
          connected = self.connected_to_internet(timeout=5)
          was_diconnected = False
@@ -186,8 +223,8 @@ class CoreUtils(object):
 
          # Read in the csv with websites and info
          try:
-            df = read_csv(websites_csv_path,header=0)
-            df = df.reset_index(drop=True)
+            self.df = read_csv(websites_csv_path,header=0)
+            self.df = self.df.reset_index(drop=True)
             df_changed = False
             self.stopped = False
          except:
@@ -196,8 +233,46 @@ class CoreUtils(object):
             print('Failed to open websites.csv, exiting main thread')
             continue
 
+         paths = tuple(self.df.iloc[:,4])
+         if 'empty' in paths:
+            df_changed = True
+            names = tuple(self.df.iloc[:,0])
+            self.df.iloc[:,0] = [sub('[^0-9a-zA-Z._:/\\\]+','',name.replace(' ','_')).replace('__','_') for name in names]
+            dl_folders = [os.path.join(data_folder_path,title) for title in self.df.iloc[:,0]]
+            for folder in dl_folders:
+               if not os.path.isdir(folder):
+                  os.mkdir(folder)
+
+            current_idx = 0
+            downloads = []
+            while current_idx < len(paths):
+               idx = 0
+               while (len(downloads) < 5) and (idx+current_idx < len(paths)):
+                  if self.df.iloc[idx+current_idx,4] == 'empty':
+                     downloads.append(Thread(target=self.download_url_thread,
+                        args=(str(self.df.iloc[idx+current_idx,1]),
+                           dl_folders[current_idx+idx],
+                           str(self.df.iloc[idx+current_idx,2]),
+                           idx+current_idx)))
+                     idx += 1
+                  else:
+                     idx += 1
+
+               current_idx += idx
+
+               for thread in downloads:
+                  thread.start()
+
+               while len(downloads) > 0:
+                  t = downloads.pop()
+                  t.join()
+               
+            del current_idx,downloads,t,thread,names,dl_folders
+            self.df.to_csv(websites_csv_path,index=False)
+            continue
+
          # Iterate over rows of websites.csv
-         for idx,info in df.iterrows():
+         for idx,info in self.df.iterrows():
 
             name = info[0]
             url = info[1]
@@ -207,35 +282,21 @@ class CoreUtils(object):
 
             if not self.run:
                df_changed = False
-               df.to_csv(websites_csv_path,index=False)
-               del df
+               self.df.to_csv(websites_csv_path,index=False)
+               del self.df
                break
 
             title = sub('[^0-9a-zA-Z._:/\\\]+','',name.replace(' ','_')).replace('__','_')
             if name != title:
                df_changed = True
-               df.iloc[idx,0] = title
+               self.df.iloc[idx,0] = title
 
             dl_folder = os.path.join(data_folder_path,title)
             del title
 
-            # If theres no path download it
-            if ((dpath=='empty')):
-               try:
-                  if not os.path.isdir(dl_folder):
-                     os.mkdir(dl_folder)
-                  filepath = self.download_url(url=url,save_path=dl_folder,type=dtype)
-                  df.iloc[idx,4] = filepath
-                  df.iloc[idx,3] = int(time())
-                  del filepath
-                  df_changed = True
-               except:
-                  pass
-               continue
-
             # Check if enough time has passed
-            if (abs(round(time()) - last_checked) >= 10000):
-               df.iloc[idx,3] = int(time())
+            if (abs(round(time()) - last_checked) >= 10):
+               self.df.iloc[idx,3] = int(time())
                df_changed = True
 
                if (dpath!='empty') and ((os.path.isfile(dpath)) or (os.path.isdir(dpath))):
@@ -246,7 +307,21 @@ class CoreUtils(object):
 
                      # Check to see if files are the same
                      if (dtype == 'zip'):
-                        same_file = cmpfiles(a=temp_folder,b=old_filepath,shallow=False)
+                        try:
+                           clear_cache()
+                        except:
+                           pass
+                        dir_a = os.listdir(new_filepath).sort()
+                        dir_b = os.listdir(old_filepath).sort()
+                        if dir_a == dir_b:
+                           same_files = cmpfiles(a=new_filepath,b=old_filepath,shallow=False,common=dir_a)[0]
+                           if len(same_files) == len(dir_a):
+                              same_file = True
+                           else:
+                              same_file = False
+                           del dir_a,dir_b
+                        else:
+                           same_file = False
                      else:
                         same_file = cmp(f1=new_filepath,f2=old_filepath,shallow=False)
 
@@ -288,8 +363,8 @@ class CoreUtils(object):
          # 4. Overwrite file
          try:
             if df_changed:
-               df.to_csv(websites_csv_path,index=False)
-            del df
+               self.df.to_csv(websites_csv_path,index=False)
+            del self.df
          except:
             pass
 
@@ -473,7 +548,8 @@ class GUI(Tk):
 
       self.info_label = Text(self.canvas,wrap=WORD,width=30,height=4,padx=6,pady=5,highlightthickness=0)
       self.info_label.tag_configure('center',justify='center')
-      self.info_label.insert('1.0','''This rudimentary GUI controls the script. New buttons and features may be added later if I can make it work''')
+      self.info_label.insert('1.0','''This rudimentary GUI controls the script. 
+                             New buttons and features may be added later if I can make it work''')
       self.info_label.tag_add('center',1.0,'end')
       self.info_label.place(relx=0.5, rely = 0.12,anchor=CENTER)
       self.info_label.config(state=DISABLED)
@@ -507,7 +583,7 @@ class GUI(Tk):
       self.pt = Table(self.f,dataframe=data,showtoolbar=False,showstatusbar=False)
       self.pt.show()
 
-      self.monitor.after(ms=10000,func=self.update_monitor)
+      self.monitor.after(ms=5000,func=self.update_monitor)
 
    def update_monitor(self):
       data = read_csv(websites_csv_path,header=0)
@@ -515,7 +591,7 @@ class GUI(Tk):
       data.iloc[:,3] = [datetime.fromtimestamp(unix_timestamp, tz).strftime("%D %H:%M") for unix_timestamp in data.iloc[:,3]]
       self.pt.model.df = data
       self.pt.redraw()
-      self.monitor.after(5000,self.update_monitor)
+      self.monitor.after(2500,self.update_monitor)
 
    def delete_monitor(self):
       self.monitor.destroy()
@@ -539,14 +615,12 @@ class GUI(Tk):
       '''
       This mess of a function starts the manin thread.
       '''
-      global ConnectedToInternetTimer
       global main_thread
 
       if (not process.stopped):
          return
 
       process.set_run()
-      ConnnectedToInternetTime = round(time(),0)
       process.set_stopped()
       main_thread = Thread(target=process.main).start()
       print('Starting main thread')
