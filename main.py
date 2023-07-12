@@ -37,7 +37,7 @@ run = False
 global stopped
 stopped = True
 
-################# Horrible Mess of Functions #################
+################# Core Functions #################
 class CoreUtils():
    def connected_to_internet(timeout: int = 5) -> bool:
       '''
@@ -88,7 +88,7 @@ class CoreUtils():
          raise ValueError
       return filepath
 
-   def clear_temp(dir: str = temp_folder):
+   def clear_temp(dir: str = temp_folder) -> None:
       '''
       Clears all files and directories from temp folder, can be used on other folders.
       '''
@@ -133,7 +133,7 @@ class CoreUtils():
             del connected,was_diconnected,end,start
       return False
 
-   def check_size(filepath,exp,ceiling=1) -> bool:
+   def check_size(filepath: str,exp: int = 3,ceiling: int = 1) -> bool:
       size = os.path.getsize(filepath)
       rel_size = size/(1024**exp)
       if (rel_size > ceiling):
@@ -192,26 +192,32 @@ class CoreUtils():
          # Iterate over rows of websites.csv
          for idx,info in df.iterrows():
 
+            name = info[0]
+            url = info[1]
+            dtype = info[2]
+            last_checked = info[3]
+            dpath = info[4]
+
             if not run:
                df_changed = False
                df.to_csv(websites_csv_path,index=False)
                del df
                break
 
-            title = sub('[^0-9a-zA-Z._:/\\\]+','',info[0].replace(' ','_')).replace('__','_')
-            if info[0] != title:
+            title = sub('[^0-9a-zA-Z._:/\\\]+','',name.replace(' ','_')).replace('__','_')
+            if name != title:
                df_changed = True
                df.iloc[idx,0] = title
 
             dl_folder = os.path.join(data_folder_path,title)
             del title
 
-            # If theres no path or the data directory does not exist, download it
-            if ((info[4]=='empty')):
+            # If theres no path download it
+            if ((dpath=='empty')):
                try:
                   if not os.path.isdir(dl_folder):
                      os.mkdir(dl_folder)
-                  filepath = CoreUtils.download_url(url=info[1],save_path=dl_folder,type=info[2])
+                  filepath = CoreUtils.download_url(url=url,save_path=dl_folder,type=dtype)
                   df.iloc[idx,4] = filepath
                   df.iloc[idx,3] = int(time())
                   del filepath
@@ -221,18 +227,18 @@ class CoreUtils():
                continue
 
             # Check if enough time has passed
-            if (abs(round(time()) - info[3]) >= 10000):
+            if (abs(round(time()) - last_checked) >= 10000):
                df.iloc[idx,3] = int(time())
                df_changed = True
 
-               if (info[4]!='empty') and ((os.path.isfile(info[4])) or (os.path.isdir(info[4]))):
+               if (dpath!='empty') and ((os.path.isfile(dpath)) or (os.path.isdir(dpath))):
                   try:
                      # Download data to temp folder using url, return temp filepath
-                     new_filepath = CoreUtils.download_url(url=info[1],save_path=temp_folder,type=info[2])
-                     old_filepath = info[4]
+                     new_filepath = CoreUtils.download_url(url=url,save_path=temp_folder,type=dtype)
+                     old_filepath = dpath
 
                      # Check to see if files are the same
-                     if (info[2] == 'zip'):
+                     if (dtype == 'zip'):
                         same_file = cmpfiles(a=temp_folder,b=old_filepath,shallow=False)
                      else:
                         same_file = cmp(f1=new_filepath,f2=old_filepath,shallow=False)
@@ -285,129 +291,132 @@ class CoreUtils():
       print("Exited main thread")
       stopped = True
 
-def autoprocess() -> None:
-   '''
-   Horrible Mess of a Function Held together by spit and duct tape
+   def autoprocess() -> None:
+      '''
+      Horrible Mess of a Function Held together by spit and duct tape
 
-   Call this function to process any and all csv's in the data folder
-   No inputs are required to make this work
-   '''
-   global window
+      Call this function to process any and all csv's in the data folder
+      No inputs are required to make this work
+      '''
+      global window
 
-   if (not run):
-      window.queue_autoprocess()
-      return
-   
-   all_csv = []
-   all_csv = glob(data_folder_path+'/*/*.csv')
-
-   to_process = []
-   all_unprocessed = []
-   for csv in all_csv:
-      dl_folder = csv[0:(len(csv)-(len(os.path.basename(csv))))]
-      filename = os.path.basename(csv).split(sep='.')[0]
-      data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] +'_Data'))
-      a = len(dl_folder)
-      b = len(temp_folder)
-      if a >= b:
-         upper = b
-      else:
-         upper = a
-      if os.path.isdir(data_folder) or (dl_folder[0:upper] == temp_folder[0:upper]):
-         del dl_folder,filename,data_folder
-         continue
-      all_unprocessed.append((csv,data_folder,filename))
-      del dl_folder
-      if len(all_unprocessed) >= 5:
-         break
-
-   if (len(all_unprocessed) >= 5):
-      for i in range(5):
-         to_process.append(all_unprocessed.pop())
-   elif (len(all_unprocessed) < 5) and (len(all_unprocessed) > 0):
-      while (len(all_unprocessed) > 0):
-         to_process.append(all_unprocessed.pop())
-
-   while len(to_process) > 0:
-      vals = to_process.pop()
-
-      if not run:
+      if (not run):
          window.queue_autoprocess()
-         del to_process
+         return
+      
+      all_dls = []
+      all_dls = list(read_csv(filepath_or_buffer=websites_csv_path,usecols=['path']).iloc[:,0])
+
+      if (len(all_dls) <= 0):
+         del all_dls
          return
 
-      csv_path = vals[0]
-      data_folder = vals[1]
-      filename = vals[2]
-      histogram_path = os.path.join(data_folder,'Hist')
-      plots_path = os.path.join(data_folder,'Plots')
+      all_csv = []
+      all_csv = [csv for csv in all_dls if '.csv' in csv]
 
-      try:
-         data = read_csv(csv_path,low_memory=False)
-      except:
+      to_process = []
+      for csv in all_csv:
+         if not CoreUtils.check_size(filepath=csv,exp=3,ceiling=0.5):
+            continue
+         dl_folder = csv[0:(len(csv)-(len(os.path.basename(csv))))]
+         filename = os.path.basename(csv).split(sep='.')[0]
+         data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0] +'_Data'))
+         a = len(dl_folder)
+         b = len(temp_folder)
+         if a >= b:
+            upper = b
+         else:
+            upper = a
+         if os.path.isdir(data_folder) or (dl_folder[0:upper] == temp_folder[0:upper]):
+            del dl_folder,filename,data_folder,a,b,upper
+            continue
+         to_process.append((csv,data_folder,filename))
+         del dl_folder
+         if len(to_process) >= 5:
+            del filename,data_folder,a,b,upper
+            break
+
+      while len(to_process) > 0:
+         vals = to_process.pop()
+
+         if not run:
+            window.queue_autoprocess()
+            del to_process
+            return
+
+         csv_path = vals[0]
+         data_folder = vals[1]
+         filename = vals[2]
+         histogram_path = os.path.join(data_folder,'Hist')
+         plots_path = os.path.join(data_folder,'Plots')
+
+         try:
+            data = read_csv(csv_path,low_memory=False)
+         except:
+            os.mkdir(data_folder)
+            failed_to_process = open(os.path.join(data_folder,'failed_to_process.txt'),'a')
+            e = datetime.now()
+            failed_to_process.write(f'{filename} failed to open on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
+            failed_to_process.close()
+            del data_folder,e,filename,csv_path,histogram_path,plots_path
+            continue
+
          os.mkdir(data_folder)
-         failed_to_process = open(os.path.join(data_folder,'failed_to_process.txt'),'a')
-         e = datetime.now()
-         failed_to_process.write(f'{filename} failed to open on {str(e.year)}, {str(e.month)}, {str(e.day)}\n')
-         failed_to_process.close()
-         del data_folder,e,filename,csv_path,histogram_path,plots_path
-         continue
+         os.mkdir(histogram_path)
+         os.mkdir(plots_path)
 
-      os.mkdir(data_folder)
-      os.mkdir(histogram_path)
-      os.mkdir(plots_path)
+         for j,col in enumerate(data):
+            if (data.dtypes[j] != 'object') and (data.dtypes[j] != 'bool'):
+               try:
+                  fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
+                  plt.switch_backend('agg')
+                  ax.hist(array(data[col]))
+                  ax.set_xlabel(col)
+                  ax.set_title('Autogenerated Histogram '+str(j+1))
+                  ax.set_facecolor('#ADD8E6')
+                  ax.set_axisbelow(True)
+                  ax.yaxis.grid(color='white', linestyle='-')
+                  savepath = os.path.join(histogram_path,(filename+'_Hist-'+str(j+1)+'.png'))
+                  fig.savefig(savepath,format='png')
+                  del savepath
+                  plt.cla()
+                  plt.clf()
+                  plt.close('all')
+               except:
+                  plt.cla()
+                  plt.clf()
+                  plt.close('all')
 
-      for j,col in enumerate(data):
-         if (data.dtypes[j] != 'object') and (data.dtypes[j] != 'bool'):
-            try:
-               fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
-               plt.switch_backend('agg')
-               ax.hist(array(data[col]))
-               ax.set_xlabel(col)
-               ax.set_title('Autogenerated Histogram '+str(j+1))
-               ax.set_facecolor('#ADD8E6')
-               ax.set_axisbelow(True)
-               ax.yaxis.grid(color='white', linestyle='-')
-               savepath = os.path.join(histogram_path,(filename+'_Hist-'+str(j+1)+'.png'))
-               fig.savefig(savepath,format='png')
-               del savepath
-               plt.cla()
-               plt.clf()
-               plt.close('all')
-            except:
-               plt.cla()
-               plt.clf()
-               plt.close('all')
+               try:
+                  fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
+                  plt.switch_backend('agg')
+                  ax.plot([idx+1 for idx,j in enumerate(data[col])],array(data[col]))
+                  ax.set_xlabel(col)
+                  ax.set_title('Autogenerated Plot '+str(j+1))
+                  ax.set_facecolor('#ADD8E6')
+                  ax.set_axisbelow(True)
+                  ax.yaxis.grid(color='white', linestyle='-')
+                  ax.xaxis.grid(color='white', linestyle='-')
+                  savepath = os.path.join(plots_path,(filename+'_Plot-'+str(j+1)+'.png'))
+                  fig.savefig(savepath,format='png')
+                  del savepath
+                  plt.cla()
+                  plt.clf()
+                  plt.close('all')
+               except:
+                  plt.cla()
+                  plt.clf()
+                  plt.close('all')
 
-            try:
-               fig,ax = plt.subplots(nrows=1,ncols=1,figsize=(8,8))
-               plt.switch_backend('agg')
-               ax.plot([idx+1 for idx,j in enumerate(data[col])],array(data[col]))
-               ax.set_xlabel(col)
-               ax.set_title('Autogenerated Plot '+str(j+1))
-               ax.set_facecolor('#ADD8E6')
-               ax.set_axisbelow(True)
-               ax.yaxis.grid(color='white', linestyle='-')
-               ax.xaxis.grid(color='white', linestyle='-')
-               savepath = os.path.join(plots_path,(filename+'_Plot-'+str(j+1)+'.png'))
-               fig.savefig(savepath,format='png')
-               del savepath
-               plt.cla()
-               plt.clf()
-               plt.close('all')
-            except:
-               plt.cla()
-               plt.clf()
-               plt.close('all')
-
-      try:
-         del data,csv_path,filename,data,histogram_path,plots_path,fig,ax
-      except:
-         continue
-
-   collect()
-   window.queue_autoprocess()
-   return
+         try:
+            del data,csv_path,filename,data,histogram_path,plots_path,fig,ax
+         except:
+            continue
+      
+      del all_csv
+      collect()
+      window.queue_autoprocess()
+      return
 
 ################# GUI Window #################
 class GUI(Tk):
@@ -473,11 +482,11 @@ class GUI(Tk):
       self.who_made_this.place(relx=0.399,rely = 0.9,anchor=CENTER)
       self.who_made_this.config(state=DISABLED)
 
-      self.after(ms=10000,func=autoprocess)
+      self.after(ms=10000,func=CoreUtils.autoprocess)
 
    def create_monitor(self):
       self.monitor = Toplevel(master=self,bg='#D3D3D3')
-      self.monitor.geometry('925x400')
+      self.monitor.geometry('1000x400')
       self.monitor.protocol("WM_DELETE_WINDOW",self.delete_monitor)
       self.monitor.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
       self.monitor.title('Websites.csv')
@@ -559,7 +568,7 @@ class GUI(Tk):
       self.destroy()
 
    def queue_autoprocess(self,ms=45000) -> None:
-      self.after(ms=ms,func=autoprocess)
+      self.after(ms=ms,func=CoreUtils.autoprocess)
 
 window = GUI()
 window.mainloop()
