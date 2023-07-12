@@ -29,17 +29,26 @@ data_folder_path = os.path.join(sys_path,'Data')
 
 temp_folder = os.path.join(data_folder_path,'temp')
 
-CheckAgain = int(time() + 1000)
-
-global run
-run = False
-
-global stopped
-stopped = True
-
 ################# Core Functions #################
-class CoreUtils():
-   def connected_to_internet(timeout: int = 5) -> bool:
+class CoreUtils(object):
+   def __init__(self):
+      self.run = False
+      self.stopped = True
+      self.CheckAgain = int(time() + 1000)
+   
+   def destroy(self):
+      del self
+
+   def set_run(self):
+      self.run = True
+
+   def stop_run(self):
+      self.run = False
+
+   def set_stopped(self):
+      self.stopped = False
+
+   def connected_to_internet(self,timeout: int = 5) -> bool:
       '''
       Does what it says, returns true if connected to internet, else returns false.
       '''
@@ -51,7 +60,7 @@ class CoreUtils():
       except:
          return False
 
-   def download_url(url: str,save_path: str,chunk_size = 1024,type: str ='csv') -> str:
+   def download_url(self,url: str,save_path: str,chunk_size = 1024,type: str ='csv') -> str:
       '''
       Save path is just the folder you want to download it in.
 
@@ -88,7 +97,7 @@ class CoreUtils():
          raise ValueError
       return filepath
 
-   def clear_temp(dir: str = temp_folder) -> None:
+   def clear_temp(self,dir: str = temp_folder) -> None:
       '''
       Clears all files and directories from temp folder, can be used on other folders.
       '''
@@ -105,17 +114,16 @@ class CoreUtils():
       del filename
       return
 
-   def check_internet_and_wait() -> bool:
+   def check_internet_and_wait(self) -> bool:
       '''
       This function basically just pings websites until it gets a response, if no response
       it will enter a loop where it checks again once a second, once it connectes it will
       return False. If the user clicks the stop button, it will return true if it is
       looping
       '''
-      global CheckAgain
-      if (abs(CheckAgain-time()) >= 5):
-         CheckAgain = time()
-         connected = CoreUtils.connected_to_internet(timeout=5)
+      if (abs(self.CheckAgain-time()) >= 5):
+         self.CheckAgain = time()
+         connected = self.connected_to_internet(timeout=5)
          was_diconnected = False
          if not connected:
             start = time()
@@ -123,8 +131,8 @@ class CoreUtils():
             print('Not connected to internet')
             while not connected:
                sleep(1)
-               connected = CoreUtils.connected_to_internet()
-               if not run:
+               connected = self.connected_to_internet()
+               if not self.run:
                   return True
             print('Connected to internet')
             end = time()
@@ -133,7 +141,7 @@ class CoreUtils():
             del connected,was_diconnected,end,start
       return False
 
-   def check_size(filepath: str,exp: int = 3,ceiling: int = 1) -> bool:
+   def check_size(self,filepath: str,exp: int = 3,ceiling: int = 1) -> bool:
       size = os.path.getsize(filepath)
       rel_size = size/(1024**exp)
       if (rel_size > ceiling):
@@ -145,7 +153,7 @@ class CoreUtils():
       else:
          raise ValueError
       
-   def main() -> None:
+   def main(self) -> None:
       '''
       So basically this runs on a thread and will only actually run after you press start on the GUI.
 
@@ -155,18 +163,17 @@ class CoreUtils():
       '''
       sleep(0.1)
       print('Main thread started')
-      global run
-      global stopped
+
       while True:
 
-         if (not run) or (CoreUtils.check_internet_and_wait()):
+         if (not self.run) or (self.check_internet_and_wait()):
             sleep(0.1)
             print('Exititng main thread')
             break
 
          # Check if websites.csv exists
          if not os.path.isfile(websites_csv_path):
-            run = False
+            self.run = False
             window.on_stop()
             print('Necessary file "websites.csv" does not exist in current directory. Exiting main thread.')
             continue
@@ -182,9 +189,9 @@ class CoreUtils():
             df = read_csv(websites_csv_path,header=0)
             df = df.reset_index(drop=True)
             df_changed = False
-            stopped = False
+            self.stopped = False
          except:
-            run = False
+            self.run = False
             window.on_stop()
             print('Failed to open websites.csv, exiting main thread')
             continue
@@ -198,7 +205,7 @@ class CoreUtils():
             last_checked = info[3]
             dpath = info[4]
 
-            if not run:
+            if not self.run:
                df_changed = False
                df.to_csv(websites_csv_path,index=False)
                del df
@@ -217,7 +224,7 @@ class CoreUtils():
                try:
                   if not os.path.isdir(dl_folder):
                      os.mkdir(dl_folder)
-                  filepath = CoreUtils.download_url(url=url,save_path=dl_folder,type=dtype)
+                  filepath = self.download_url(url=url,save_path=dl_folder,type=dtype)
                   df.iloc[idx,4] = filepath
                   df.iloc[idx,3] = int(time())
                   del filepath
@@ -234,7 +241,7 @@ class CoreUtils():
                if (dpath!='empty') and ((os.path.isfile(dpath)) or (os.path.isdir(dpath))):
                   try:
                      # Download data to temp folder using url, return temp filepath
-                     new_filepath = CoreUtils.download_url(url=url,save_path=temp_folder,type=dtype)
+                     new_filepath = self.download_url(url=url,save_path=temp_folder,type=dtype)
                      old_filepath = dpath
 
                      # Check to see if files are the same
@@ -245,7 +252,7 @@ class CoreUtils():
 
                      # If files are the same, clear temp folder
                      if same_file:
-                        CoreUtils.clear_temp()
+                        self.clear_temp()
 
                      # If files are different, move new file in temp to overwrite old file
                      # clear temp folder, delete old data folder, and process new data
@@ -257,7 +264,7 @@ class CoreUtils():
                            os.unlink(old_filepath)
                         # Move file from temp to corresponding data folder
                         move(src=new_filepath,dst=old_filepath)
-                        CoreUtils.clear_temp()
+                        self.clear_temp()
                         # Delete old figures directory so that autoprocess can process it
                         filename = os.path.basename(old_filepath)
                         data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0]+'_Data'))
@@ -267,12 +274,12 @@ class CoreUtils():
                   except:
                      pass
                   try:
-                     CoreUtils.clear_temp()
+                     self.clear_temp()
                   except:
                      pass
 
          try:
-            CoreUtils.clear_temp()
+            self.clear_temp()
          except:
             pass
 
@@ -289,9 +296,9 @@ class CoreUtils():
          sleep(0.2)
 
       print("Exited main thread")
-      stopped = True
+      self.stopped = True
 
-   def autoprocess() -> None:
+   def autoprocess(self) -> None:
       '''
       Horrible Mess of a Function Held together by spit and duct tape
 
@@ -300,7 +307,7 @@ class CoreUtils():
       '''
       global window
 
-      if (not run):
+      if (not self.run):
          window.queue_autoprocess()
          return
       
@@ -316,7 +323,7 @@ class CoreUtils():
 
       to_process = []
       for csv in all_csv:
-         if not CoreUtils.check_size(filepath=csv,exp=3,ceiling=0.5):
+         if not self.check_size(filepath=csv,exp=3,ceiling=0.5):
             continue
          dl_folder = csv[0:(len(csv)-(len(os.path.basename(csv))))]
          filename = os.path.basename(csv).split(sep='.')[0]
@@ -339,7 +346,7 @@ class CoreUtils():
       while len(to_process) > 0:
          vals = to_process.pop()
 
-         if not run:
+         if not self.run:
             window.queue_autoprocess()
             del to_process
             return
@@ -482,7 +489,7 @@ class GUI(Tk):
       self.who_made_this.place(relx=0.399,rely = 0.9,anchor=CENTER)
       self.who_made_this.config(state=DISABLED)
 
-      self.after(ms=10000,func=CoreUtils.autoprocess)
+      self.after(ms=10000,func=process.autoprocess)
 
    def create_monitor(self):
       self.monitor = Toplevel(master=self,bg='#D3D3D3')
@@ -518,7 +525,7 @@ class GUI(Tk):
       '''
       Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this.
       '''
-      if (self.start_button["state"] == "normal") and (self.end_button["state"] == "normal") and (run == False):
+      if (self.start_button["state"] == "normal") and (self.end_button["state"] == "normal") and (process.run == False):
          self.start_button["state"] = "normal"
          self.end_button["state"] = "disabled"
       elif self.start_button["state"] == "normal":
@@ -532,18 +539,16 @@ class GUI(Tk):
       '''
       This mess of a function starts the manin thread.
       '''
-      global stopped
-      global run
       global ConnectedToInternetTimer
       global main_thread
 
-      if (not stopped):
+      if (not process.stopped):
          return
 
-      run = True
+      process.set_run()
       ConnnectedToInternetTime = round(time(),0)
-      stopped = False
-      main_thread = Thread(target=CoreUtils.main).start()
+      process.set_stopped()
+      main_thread = Thread(target=process.main).start()
       print('Starting main thread')
       self.switch()
 
@@ -551,30 +556,29 @@ class GUI(Tk):
       '''
       This function stops the main thread.
       '''
-      global run
-      if run == False:
+      if not process.run:
          self.switch()
          return
       print('Waiting for main thread to reach stopping point')
-      run = False
+      process.stop_run()
       self.switch()
 
    def on_x(self) -> None:
-      global run
-      global stopped
-      if run:
+      if process.run:
          print('Waiting for main thread to reach stopping point')
-      run = False
+      process.stop_run()
       self.destroy()
 
-   def queue_autoprocess(self,ms=45000) -> None:
-      self.after(ms=ms,func=CoreUtils.autoprocess)
+   def queue_autoprocess(self,ms=5000) -> None:
+      self.after(ms=ms,func=process.autoprocess)
 
+process = CoreUtils()
 window = GUI()
 window.mainloop()
 
 while True:
    sleep(0.1)
-   if stopped:
+   if process.stopped:
       del window
+      del process
       exit('Successfully exited program')
