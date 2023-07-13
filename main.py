@@ -180,6 +180,9 @@ class CoreUtils(object):
       return False
 
    def check_size(self,filepath: str,exp: int = 3,ceiling: int = 1) -> bool:
+      '''
+      Checks size of file before generating figures
+      '''
       size = os.path.getsize(filepath)
       rel_size = size/(1024**exp)
       if (rel_size > ceiling):
@@ -192,6 +195,9 @@ class CoreUtils(object):
          raise ValueError
       
    def empty_path_dl_manager(self):
+      '''
+      Downloads any entries in websites.csv that doesn't have a file location
+      '''
       paths = tuple(self.df.iloc[:,4])
       if 'empty' in paths:
          self.df_changed = True
@@ -573,6 +579,9 @@ class GUI(Tk):
       self.after(ms=10000,func=process.autoprocess)
 
    def create_monitor(self):
+      '''
+      Creates spreadsheet window
+      '''
       self.monitor = Toplevel(master=self,bg='#D3D3D3')
       self.monitor.geometry('1000x400')
       self.monitor.protocol("WM_DELETE_WINDOW",self.delete_monitor)
@@ -591,6 +600,9 @@ class GUI(Tk):
       self.monitor.after(ms=5000,func=self.update_monitor)
 
    def update_monitor(self):
+      '''
+      Redraws the spreadsheet
+      '''
       data = read_csv(websites_csv_path,header=0)
       tz = get_localzone()
       data.iloc[:,3] = [datetime.fromtimestamp(unix_timestamp, tz).strftime("%D %H:%M") for unix_timestamp in data.iloc[:,3]]
@@ -599,6 +611,9 @@ class GUI(Tk):
       self.monitor.after(2500,self.update_monitor)
 
    def delete_monitor(self):
+      '''
+      Deletes the spreadsheet and toggles the spreadsheet button
+      '''
       self.monitor.destroy()
       self.monitor_button['state'] = 'normal'
 
@@ -643,12 +658,18 @@ class GUI(Tk):
       self.switch()
 
    def on_x(self) -> None:
+      '''
+      This is the behavior for when you close the window
+      '''
       if process.run:
          print('Waiting for main thread to reach stopping point')
       process.stop_run()
       self.destroy()
 
    def queue_autoprocess(self,ms=5000) -> None:
+      '''
+      Queues autoprocess to run after a specified time
+      '''
       self.after(ms=ms,func=process.autoprocess)
 
 process = CoreUtils()
