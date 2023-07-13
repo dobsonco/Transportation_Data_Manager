@@ -35,6 +35,7 @@ class CoreUtils(object):
       self.run = False
       self.stopped = True
       self.CheckAgain = int(time() + 1000)
+      self.df_changed = False
 
    def set_run(self):
       self.run = True
@@ -190,6 +191,45 @@ class CoreUtils(object):
       else:
          raise ValueError
       
+   def empty_path_dl_manager(self):
+      paths = tuple(self.df.iloc[:,4])
+      if 'empty' in paths:
+         self.df_changed = True
+         names = tuple(self.df.iloc[:,0])
+         self.df.iloc[:,0] = [sub('[^0-9a-zA-Z._:/\\\]+','',name.replace(' ','_')).replace('__','_') for name in names]
+         dl_folders = [os.path.join(data_folder_path,title) for title in self.df.iloc[:,0]]
+         for folder in dl_folders:
+            if not os.path.isdir(folder):
+               os.mkdir(folder)
+
+         current_idx = 0
+         downloads = []
+         while current_idx < len(paths):
+            idx = 0
+            while (len(downloads) < 5) and (idx+current_idx < len(paths)):
+               if self.df.iloc[idx+current_idx,4] == 'empty':
+                  downloads.append(Thread(target=self.download_url_thread,
+                     args=(str(self.df.iloc[idx+current_idx,1]),
+                        dl_folders[current_idx+idx],
+                        str(self.df.iloc[idx+current_idx,2]),
+                        idx+current_idx)))
+                  idx += 1
+               else:
+                  idx += 1
+
+            current_idx += idx
+
+            for thread in downloads:
+               thread.start()
+
+            while len(downloads) > 0:
+               t = downloads.pop()
+               t.join()
+            
+         del current_idx,downloads,t,thread,names,dl_folders
+         self.df.to_csv(websites_csv_path,index=False)
+         return True
+      
    def main(self) -> None:
       '''
       So basically this runs on a thread and will only actually run after you press start on the GUI.
@@ -225,7 +265,7 @@ class CoreUtils(object):
          try:
             self.df = read_csv(websites_csv_path,header=0)
             self.df = self.df.reset_index(drop=True)
-            df_changed = False
+            self.df_changed = False
             self.stopped = False
          except:
             self.run = False
@@ -233,42 +273,7 @@ class CoreUtils(object):
             print('Failed to open websites.csv, exiting main thread')
             continue
 
-         paths = tuple(self.df.iloc[:,4])
-         if 'empty' in paths:
-            df_changed = True
-            names = tuple(self.df.iloc[:,0])
-            self.df.iloc[:,0] = [sub('[^0-9a-zA-Z._:/\\\]+','',name.replace(' ','_')).replace('__','_') for name in names]
-            dl_folders = [os.path.join(data_folder_path,title) for title in self.df.iloc[:,0]]
-            for folder in dl_folders:
-               if not os.path.isdir(folder):
-                  os.mkdir(folder)
-
-            current_idx = 0
-            downloads = []
-            while current_idx < len(paths):
-               idx = 0
-               while (len(downloads) < 5) and (idx+current_idx < len(paths)):
-                  if self.df.iloc[idx+current_idx,4] == 'empty':
-                     downloads.append(Thread(target=self.download_url_thread,
-                        args=(str(self.df.iloc[idx+current_idx,1]),
-                           dl_folders[current_idx+idx],
-                           str(self.df.iloc[idx+current_idx,2]),
-                           idx+current_idx)))
-                     idx += 1
-                  else:
-                     idx += 1
-
-               current_idx += idx
-
-               for thread in downloads:
-                  thread.start()
-
-               while len(downloads) > 0:
-                  t = downloads.pop()
-                  t.join()
-               
-            del current_idx,downloads,t,thread,names,dl_folders
-            self.df.to_csv(websites_csv_path,index=False)
+         if self.empty_path_dl_manager():
             continue
 
          # Iterate over rows of websites.csv
@@ -281,14 +286,14 @@ class CoreUtils(object):
             dpath = info[4]
 
             if not self.run:
-               df_changed = False
+               self.df_changed = False
                self.df.to_csv(websites_csv_path,index=False)
                del self.df
                break
 
             title = sub('[^0-9a-zA-Z._:/\\\]+','',name.replace(' ','_')).replace('__','_')
             if name != title:
-               df_changed = True
+               self.df_changed = True
                self.df.iloc[idx,0] = title
 
             dl_folder = os.path.join(data_folder_path,title)
@@ -297,7 +302,7 @@ class CoreUtils(object):
             # Check if enough time has passed
             if (abs(round(time()) - last_checked) >= 10):
                self.df.iloc[idx,3] = int(time())
-               df_changed = True
+               self.df_changed = True
 
                if (dpath!='empty') and ((os.path.isfile(dpath)) or (os.path.isdir(dpath))):
                   try:
@@ -345,7 +350,7 @@ class CoreUtils(object):
                         data_folder = os.path.join(dl_folder,(filename.split(sep='.')[0]+'_Data'))
                         rmtree(path=data_folder)
                         del same_file,data_folder,new_filepath,old_filepath
-                        df_changed = True
+                        self.df_changed = True
                   except:
                      pass
                   try:
@@ -362,7 +367,7 @@ class CoreUtils(object):
 
          # 4. Overwrite file
          try:
-            if df_changed:
+            if self.df_changed:
                self.df.to_csv(websites_csv_path,index=False)
             del self.df
          except:
