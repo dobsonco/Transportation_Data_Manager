@@ -306,7 +306,7 @@ class CoreUtils(object):
             del title
 
             # Check if enough time has passed
-            if (abs(round(time()) - last_checked) >= 10):
+            if (abs(round(time()) - last_checked) >= 604800):
                self.df.iloc[idx,3] = int(time())
                self.df_changed = True
 
@@ -402,6 +402,7 @@ class CoreUtils(object):
 
       if (len(all_dls) <= 0):
          del all_dls
+         window.queue_autoprocess()
          return
 
       all_csv = []
@@ -560,7 +561,7 @@ class GUI(Tk):
       self.info_label = Text(self.canvas,wrap=WORD,width=30,height=4,padx=6,pady=5,highlightthickness=0)
       self.info_label.tag_configure('center',justify='center')
       self.info_label.insert('1.0','''This rudimentary GUI controls the script. 
-                             New buttons and features may be added later if I can make it work''')
+         New buttons and features may be added later if I can make it work''')
       self.info_label.tag_add('center',1.0,'end')
       self.info_label.place(relx=0.5, rely = 0.12,anchor=CENTER)
       self.info_label.config(state=DISABLED)
@@ -578,7 +579,7 @@ class GUI(Tk):
 
       self.after(ms=10000,func=process.autoprocess)
 
-   def create_monitor(self):
+   def create_monitor(self) -> None:
       '''
       Creates spreadsheet window
       '''
@@ -599,7 +600,7 @@ class GUI(Tk):
 
       self.monitor.after(ms=5000,func=self.update_monitor)
 
-   def update_monitor(self):
+   def update_monitor(self) -> None:
       '''
       Redraws the spreadsheet
       '''
@@ -610,7 +611,7 @@ class GUI(Tk):
       self.pt.redraw()
       self.monitor.after(2500,self.update_monitor)
 
-   def delete_monitor(self):
+   def delete_monitor(self) -> None:
       '''
       Deletes the spreadsheet and toggles the spreadsheet button
       '''
@@ -666,7 +667,7 @@ class GUI(Tk):
       process.stop_run()
       self.destroy()
 
-   def queue_autoprocess(self,ms=5000) -> None:
+   def queue_autoprocess(self,ms=604800000) -> None:
       '''
       Queues autoprocess to run after a specified time
       '''

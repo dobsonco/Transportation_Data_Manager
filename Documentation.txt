@@ -1,0 +1,53 @@
+Transportation Data Manager
+========
+
+Transportation Data Manager will download and manage datasets as specified in websites.csv.
+The goal of this project is to consolidate data from specified locations (databases etc...)
+to a structured local storage location.
+
+Features
+--------
+
+    - main.py contains two classes, GUI and CoreUtils. Both will return an object when called, neither take any inputs
+    - Within the CoreUtils object there are 12 methods that allow the main loop to work and for the GUI to start and stop it
+        - set_run: Sets self.run to True, this keeps the main method running. Takes no inputs and returns nothing
+        - stop_run: Sets self.run to False, this stops autoprocess and main. Takes no inputs and returns nothing
+        - set_stopped: Sets self.stopped to False, when main ends, it will set self.stopped to True, which allows the program to exit. Takes no inputs and returns nothing
+        - connected_to_internet: Pings one of 3 servers to determine if the computer is connected to the internet, returns True if connected, False if not. Takes an input of the maximum time to wait for response
+        - download_url_thread: This is meant to be run using threading. Takes an input of url: str, save_path: str, type: str, index: int and returns nothing. When the function ends, it writes that info to the dataframe
+        - download_url: This is meant for single downloads, returns the filepath when finished. Takes url: str, save_path: str, chunk_size = 1024, type: str ='csv'.
+        - clear_temp: Clears all files and directories in the temp folder, which is located inside of Data
+        - check_internet_and_wait: This is called at the start of the main loop, it checks the internet connection, if not connected it will keep checking periodically until it is. If self.run is set to False, it will return True, else it returns False
+        - check_size: Takes path to file, the exponent (1 for KB, 2 for MB, 3 for GB, etc...), and the maximum size. If smaller, returns True, else False. 
+        - empty_path_dl_manager: Takes no input, queues batches of download_url_threads.
+        - main: This is the main loop. This makes sure that all files and directories exist, downloads any entries in which the path is 'empty'. If the difference between last_checked is greater than a set number, it will download the data and compare the files
+        - autoprocess: Locates all csvs, picks 5, automatically generates figures for each column. Takes no input, returns nothing. While running, the GUI will be unresponsive, as both need to run on the main threading
+    - Within the GUI class, there are 8 methods.
+        - create_monitor: Creates window with spreadsheet, turns spreadsheet button off so you can't make a second+ spreadsheet window.
+        - update_monitor: redraws the spreadsheet to keep it up to datetime. This should be called about every 3 seconds
+        - delete_monitor: deletes monitor and re-activates the spreadsheet button
+        - swtich: Because the start and stop buttons are tied together, I just turned the toggle into one function, don't touch this
+        - on_start: Starts the main loop from CoreUtils in another thread
+        - on_stop: Stops the main loop by changing run to false
+        - on_x: Sets run to false, destroys GUI window, and exits the program when main reaches a stopping point
+        - queue_autoprocess: Sets autoprocess to run after some delay
+
+
+Installation
+------------
+
+Install Transportation Data Manager by running:
+
+    - Create conda environment with python 3.9.x
+    - Use pip to install all packages from requirements.txt (I tried to use pyinstaller, but there ended up being some issues that I was unable to resolve)
+
+Contribute
+----------
+
+- Source Code: github.com/dobsonco/Transportation_Data_Manager
+
+Support
+-------
+
+If you are having issues, please let me know.
+Email me at: whaticed+transportation@gmail.com
