@@ -516,6 +516,7 @@ class CoreUtils(object):
 class GUI(Tk):
    def __init__(self) -> Tk:
       super().__init__()
+      self.process = CoreUtils()
 
       self.protocol("WM_DELETE_WINDOW",self.on_x)
 
@@ -577,7 +578,7 @@ class GUI(Tk):
       self.who_made_this.place(relx=0.399,rely = 0.9,anchor=CENTER)
       self.who_made_this.config(state=DISABLED)
 
-      self.after(ms=10000,func=process.autoprocess)
+      self.after(ms=10000,func=self.process.autoprocess)
 
    def create_monitor(self) -> None:
       '''
@@ -622,7 +623,7 @@ class GUI(Tk):
       '''
       Toggles the buttons on the the GUI, because of the multithreading, make sure to not change this.
       '''
-      if (self.start_button["state"] == "normal") and (self.end_button["state"] == "normal") and (process.run == False):
+      if (self.start_button["state"] == "normal") and (self.end_button["state"] == "normal") and (self.process.run == False):
          self.start_button["state"] = "normal"
          self.end_button["state"] = "disabled"
       elif self.start_button["state"] == "normal":
@@ -638,12 +639,12 @@ class GUI(Tk):
       '''
       global main_thread
 
-      if (not process.stopped):
+      if (not self.process.stopped):
          return
 
-      process.set_run()
-      process.set_stopped()
-      main_thread = Thread(target=process.main).start()
+      self.process.set_run()
+      self.process.set_stopped()
+      main_thread = Thread(target=self.process.main).start()
       print('Starting main thread')
       self.switch()
 
@@ -651,35 +652,33 @@ class GUI(Tk):
       '''
       This function stops the main thread.
       '''
-      if not process.run:
+      if not self.process.run:
          self.switch()
          return
       print('Waiting for main thread to reach stopping point')
-      process.stop_run()
+      self.process.stop_run()
       self.switch()
 
    def on_x(self) -> None:
       '''
       This is the behavior for when you close the window
       '''
-      if process.run:
+      if self.process.run:
          print('Waiting for main thread to reach stopping point')
-      process.stop_run()
+      self.process.stop_run()
       self.destroy()
 
    def queue_autoprocess(self,ms=604800000) -> None:
       '''
       Queues autoprocess to run after a specified time
       '''
-      self.after(ms=ms,func=process.autoprocess)
+      self.after(ms=ms,func=self.process.autoprocess)
 
-process = CoreUtils()
 window = GUI()
 window.mainloop()
 
 while True:
    sleep(0.1)
-   if process.stopped:
+   if window.process.stopped:
       del window
-      del process
       exit('Successfully exited program')
