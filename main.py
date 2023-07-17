@@ -57,6 +57,16 @@ class CoreUtils(object):
          return True
       except:
          return False
+      
+   def ping(self,url) -> bool:
+      '''
+      Does what it says, returns true if connected to internet, else returns false.
+      '''
+      try:
+         _ = head(url,timeout=5)
+         return True
+      except:
+         return False
 
    def download_url_thread(self,url: str,save_path: str,type: str,index: int) -> None:
       '''
@@ -271,6 +281,9 @@ class CoreUtils(object):
          try:
             self.df = read_csv(websites_csv_path,header=0)
             self.df = self.df.reset_index(drop=True)
+            self.df['path'] = self.df['path'].fillna('empty')
+            self.df['last_checked'] = self.df['last_checked'].fillna(time())
+            self.df['title'] = self.df['title'].fillna('PLACEHOLDER_TITLE')
             self.df_changed = False
             self.stopped = False
          except:
@@ -519,6 +532,7 @@ class GUI(Tk):
       self.process = CoreUtils()
 
       self.protocol("WM_DELETE_WINDOW",self.on_x)
+      self.resizable(False, False)
 
       self.title('Transportation Data Manager')
       self.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
@@ -533,31 +547,41 @@ class GUI(Tk):
       self.start_label.tag_configure('center',justify='center')
       self.start_label.insert('1.0','When pressed, this button will start the loop')
       self.start_label.tag_add('center',1.0,'end')
-      self.start_label.place(relx = 0.35, rely = 0.33,anchor=CENTER)
+      self.start_label.place(relx = 0.35, rely = 0.27,anchor=CENTER)
       self.start_label.config(state= DISABLED)
 
       self.start_button = Button(self.canvas,text="    Start    ",command=self.on_start,padx=6,pady=5,highlightthickness=0)
-      self.start_button.place(relx=0.8,rely=0.33,anchor=CENTER)
+      self.start_button.place(relx=0.8,rely=0.27,anchor=CENTER)
 
       self.end_label = Text(self.canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
       self.end_label.tag_configure('center',justify='center')
       self.end_label.insert('1.0','When pressed, this button will end the loop')
       self.end_label.tag_add('center',1.0,'end')
-      self.end_label.place(relx = 0.35, rely = 0.5,anchor=CENTER)
+      self.end_label.place(relx = 0.35, rely = 0.40,anchor=CENTER)
       self.end_label.config(state=DISABLED)
 
       self.end_button = Button(self.canvas,text="    Stop    ",command=self.on_stop,padx=6,pady=5,highlightthickness=0)
-      self.end_button.place(relx=0.8,rely=0.5,anchor=CENTER)
+      self.end_button.place(relx=0.8,rely=0.40,anchor=CENTER)
 
       self.monitor_label = Text(self.canvas,wrap=WORD,width=30,height=3,padx=6,pady=5,highlightthickness=0)
       self.monitor_label.tag_configure('center',justify='center')
       self.monitor_label.insert('1.0','This button will create a window with the current spreadsheet')
       self.monitor_label.tag_add('center',1.0,'end')
-      self.monitor_label.place(relx = 0.35, rely = 0.67,anchor=CENTER)
+      self.monitor_label.place(relx = 0.35, rely = 0.53,anchor=CENTER)
       self.monitor_label.config(state=DISABLED)
 
       self.monitor_button = Button(self.canvas,text="Spreadsheet",command=self.create_monitor,padx=6,pady=5,highlightthickness=0)
-      self.monitor_button.place(relx=0.8,rely=0.67,anchor=CENTER)
+      self.monitor_button.place(relx=0.8,rely=0.53,anchor=CENTER)
+
+      self.add_label = Text(self.canvas,wrap=WORD,width=30,height=3,padx=6,pady=5,highlightthickness=0)
+      self.add_label.tag_configure('center',justify='center')
+      self.add_label.insert('1.0','This button will create a window that allows you to enter new websites to track')
+      self.add_label.tag_add('center',1.0,'end')
+      self.add_label.place(relx = 0.35, rely = 0.67,anchor=CENTER)
+      self.add_label.config(state=DISABLED)
+
+      self.add_button = Button(self.canvas,text="Add Entry",command=self.create_add_window,padx=6,pady=5,highlightthickness=0)
+      self.add_button.place(relx=0.8,rely=0.67,anchor=CENTER)
 
       self.info_label = Text(self.canvas,wrap=WORD,width=30,height=4,padx=6,pady=5,highlightthickness=0)
       self.info_label.tag_configure('center',justify='center')
@@ -580,6 +604,100 @@ class GUI(Tk):
 
       self.after(ms=10000,func=self.process.autoprocess)
 
+   def create_add_window(self) -> None:
+      self.on_stop()
+      self.withdraw()
+      # try:
+      #    self.delete_monitor()
+      # except:
+      #    pass
+      # self.create_monitor()
+
+      self.add_win = Toplevel(master=self,bg='#D3D3D3')
+      self.add_win.protocol("WM_DELETE_WINDOW",self.delete_add_window)
+      self.add_win.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
+      self.add_win.title('websites.csv')
+      self.add_button['state'] = 'disabled'
+
+      self.add_frame = Frame(self.add_win,height=500,width=300,bg='#D3D3D3')
+      self.add_frame.pack()
+
+      self.add_label1 = Text(self.add_frame,wrap=WORD,width=15,height=1,padx=6,pady=5,highlightthickness=0)
+      self.add_label1.tag_configure('center',justify='center')
+      self.add_label1.insert('1.0','''Enter Title''')
+      self.add_label1.tag_add('center',1.0,'end')
+      self.add_label1.pack()#place(relx=0.5, rely = 0.05,anchor=CENTER)
+      self.add_label1.config(state=DISABLED)
+
+      self.entry1 = Entry(self.add_frame,width=90)
+      self.entry1.pack()
+
+      self.add_label2 = Text(self.add_frame,wrap=WORD,width=15,height=1,padx=6,pady=5,highlightthickness=0)
+      self.add_label2.tag_configure('center',justify='center')
+      self.add_label2.insert('1.0','''Enter Link''')
+      self.add_label2.tag_add('center',1.0,'end')
+      self.add_label2.pack()#place(relx=0.5, rely = 0.05,anchor=CENTER)
+      self.add_label2.config(state=DISABLED)
+
+      self.entry2 = Entry(self.add_frame,width=90)
+      self.entry2.pack()
+
+      self.add_label3 = Text(self.add_frame,wrap=WORD,width=15,height=1,padx=6,pady=5,highlightthickness=0)
+      self.add_label3.tag_configure('center',justify='center')
+      self.add_label3.insert('1.0','''Enter Type''')
+      self.add_label3.tag_add('center',1.0,'end')
+      self.add_label3.pack()#place(relx=0.5, rely = 0.05,anchor=CENTER)
+      self.add_label3.config(state=DISABLED)
+
+      self.entry3 = Entry(self.add_frame,width=90)
+      self.entry3.pack()
+
+      self.add_entry_button = Button(self.add_frame,text="Add To websites.csv",command=self.getEntry,padx=6,pady=5,highlightthickness=0)
+      self.add_entry_button.pack()#place(relx=0.5,rely=0.9,anchor=CENTER)
+
+   def getEntry(self) -> None:
+      title = self.entry1.get()
+      if len(title) <= 1:
+         print("Entry 1 is too short")
+         self.entry1.delete(0,END)
+         del title
+         return
+      
+      link = self.entry2.get()
+      if not self.process.ping(link):
+         print('Link is invalid')
+         self.entry2.delete(0,END)
+         del title,link
+         return
+      
+      type = self.entry3.get()
+      if len(type) <= 0:
+         print("enter type")
+         self.entry3.delete(0,END)
+         return
+
+      final_entry = (title,link,type)
+
+      with open(websites_csv_path,'a') as web:
+         web.write(f'\n{final_entry[0]}, {final_entry[1]}, {final_entry[2]}, {int(time())}, empty')
+
+      self.entry1.delete(0,END)
+      self.entry2.delete(0,END)
+      self.entry3.delete(0,END)
+
+      print(final_entry)
+      del final_entry
+
+      try:
+         self.update_monitor()
+      except:
+         pass
+
+   def delete_add_window(self) -> None:
+      self.add_win.destroy()
+      self.add_button['state'] = 'normal'
+      self.deiconify()
+
    def create_monitor(self) -> None:
       '''
       Creates spreadsheet window
@@ -588,7 +706,7 @@ class GUI(Tk):
       self.monitor.geometry('1000x400')
       self.monitor.protocol("WM_DELETE_WINDOW",self.delete_monitor)
       self.monitor.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
-      self.monitor.title('Websites.csv')
+      self.monitor.title('websites.csv')
       self.monitor_button['state'] = 'disabled'
 
       self.f = Frame(self.monitor,height=1000,width=1600,bg='#D3D3D3')
@@ -637,14 +755,12 @@ class GUI(Tk):
       '''
       This mess of a function starts the manin thread.
       '''
-      global main_thread
-
       if (not self.process.stopped):
          return
 
       self.process.set_run()
       self.process.set_stopped()
-      main_thread = Thread(target=self.process.main).start()
+      self.main_thread = Thread(target=self.process.main).start()
       print('Starting main thread')
       self.switch()
 
