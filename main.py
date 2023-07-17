@@ -613,16 +613,57 @@ class GUI(Tk):
       self.after(ms=10000,func=self.process.autoprocess)
 
    def create_add_window(self) -> None:
+      '''
+      Creates window that allows you to add entries to websites.csv
+      '''
+      def getEntry(self: GUI) -> None:
+         title = self.entry1.get()
+         if len(title) < 1:
+            print("Entry 1 is too short")
+            self.entry1.delete(0,END)
+            del title
+            return
+         
+         link = self.entry2.get()
+         if not self.process.ping(link):
+            print('Link is invalid')
+            self.entry2.delete(0,END)
+            del title,link
+            return
+         
+         type = self.entry3.get()
+         if len(type) <= 0:
+            print("Enter type")
+            self.entry3.delete(0,END)
+            return
+
+         final_entry = (title,link,type)
+
+         with open(websites_csv_path,'a') as web:
+            web.write(f'\n{final_entry[0]},{final_entry[1]},{final_entry[2]},{int(time())},empty')
+
+         self.entry1.delete(0,END)
+         self.entry2.delete(0,END)
+         self.entry3.delete(0,END)
+
+         print(final_entry)
+         del final_entry
+
+         try:
+            self.create_monitor.update_monitor(self)
+         except:
+            pass
+      
+      def delete_add_window(self: GUI) -> None:
+         self.add_win.destroy()
+         self.add_button['state'] = 'normal'
+         self.deiconify()  
+
       self.on_stop()
       self.withdraw()
-      # try:
-      #    self.delete_monitor()
-      # except:
-      #    pass
-      # self.create_monitor()
 
       self.add_win = Toplevel(master=self,bg='#D3D3D3')
-      self.add_win.protocol("WM_DELETE_WINDOW",self.delete_add_window)
+      self.add_win.protocol("WM_DELETE_WINDOW",lambda: delete_add_window(self))
       self.add_win.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
       self.add_win.title('websites.csv')
       self.add_button['state'] = 'disabled'
@@ -660,59 +701,38 @@ class GUI(Tk):
       self.entry3 = Entry(self.add_frame,width=90)
       self.entry3.pack()
 
-      self.add_entry_button = Button(self.add_frame,text="Add To websites.csv",command=self.getEntry,padx=6,pady=5,highlightthickness=0)
+      self.add_entry_button = Button(self.add_frame,text="Add To websites.csv",command=lambda: getEntry(self),padx=6,pady=5,highlightthickness=0)
       self.add_entry_button.pack()#place(relx=0.5,rely=0.9,anchor=CENTER)
-
-   def getEntry(self) -> None:
-      title = self.entry1.get()
-      if len(title) < 1:
-         print("Entry 1 is too short")
-         self.entry1.delete(0,END)
-         del title
-         return
-      
-      link = self.entry2.get()
-      if not self.process.ping(link):
-         print('Link is invalid')
-         self.entry2.delete(0,END)
-         del title,link
-         return
-      
-      type = self.entry3.get()
-      if len(type) <= 0:
-         print("Enter type")
-         self.entry3.delete(0,END)
-         return
-
-      final_entry = (title,link,type)
-
-      with open(websites_csv_path,'a') as web:
-         web.write(f'\n{final_entry[0]},{final_entry[1]},{final_entry[2]},{int(time())},empty')
-
-      self.entry1.delete(0,END)
-      self.entry2.delete(0,END)
-      self.entry3.delete(0,END)
-
-      print(final_entry)
-      del final_entry
-
-      try:
-         self.update_monitor()
-      except:
-         pass
-
-   def delete_add_window(self) -> None:
-      self.add_win.destroy()
-      self.add_button['state'] = 'normal'
-      self.deiconify()
 
    def create_monitor(self) -> None:
       '''
       Creates spreadsheet window
       '''
+      def update_monitor(self: GUI) -> None:
+         '''
+         Redraws the spreadsheet
+         '''
+         data = read_csv(websites_csv_path,header=0)
+         data = data.reset_index(drop=True)
+         data['path'] = data['path'].fillna('empty')
+         data['last_checked'] = data['last_checked'].fillna(time())
+         data['title'] = data['title'].fillna('PLACEHOLDER_TITLE')
+         tz = get_localzone()
+         data.iloc[:,3] = [datetime.fromtimestamp(unix_timestamp, tz).strftime("%D %H:%M") for unix_timestamp in data.iloc[:,3]]
+         self.pt.model.df = data
+         self.pt.redraw()
+         self.monitor.after(2500,lambda: update_monitor(self))
+
+      def delete_monitor(self: GUI) -> None:
+         '''
+         Deletes the spreadsheet and toggles the spreadsheet button
+         '''
+         self.monitor.destroy()
+         self.monitor_button['state'] = 'normal'
+
       self.monitor = Toplevel(master=self,bg='#D3D3D3')
       self.monitor.geometry('1000x400')
-      self.monitor.protocol("WM_DELETE_WINDOW",self.delete_monitor)
+      self.monitor.protocol("WM_DELETE_WINDOW",lambda: delete_monitor(self))
       self.monitor.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
       self.monitor.title('websites.csv')
       self.monitor_button['state'] = 'disabled'
@@ -725,25 +745,7 @@ class GUI(Tk):
       self.pt = Table(self.f,dataframe=data,showtoolbar=False,showstatusbar=False)
       self.pt.show()
 
-      self.monitor.after(ms=5000,func=self.update_monitor)
-
-   def update_monitor(self) -> None:
-      '''
-      Redraws the spreadsheet
-      '''
-      data = read_csv(websites_csv_path,header=0)
-      tz = get_localzone()
-      data.iloc[:,3] = [datetime.fromtimestamp(unix_timestamp, tz).strftime("%D %H:%M") for unix_timestamp in data.iloc[:,3]]
-      self.pt.model.df = data
-      self.pt.redraw()
-      self.monitor.after(2500,self.update_monitor)
-
-   def delete_monitor(self) -> None:
-      '''
-      Deletes the spreadsheet and toggles the spreadsheet button
-      '''
-      self.monitor.destroy()
-      self.monitor_button['state'] = 'normal'
+      self.monitor.after(ms=5000,func=lambda: update_monitor(self))
 
    def switch(self) -> None:
       '''
