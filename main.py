@@ -78,7 +78,7 @@ class CoreUtils(object):
       return the path to the folder along with the name of the folder.
       '''
       if (self.check_internet_and_wait(check_now=True)):
-         raise InterruptedError
+         return
       
       dir_name = os.path.basename(save_path)
       num_ = len([i for i,j in enumerate(dir_name) if j == '_'])
@@ -86,7 +86,10 @@ class CoreUtils(object):
       filepath = os.path.join(save_path,filename)
       del dir_name,num_,filename
 
-      r = get(url, stream=True)
+      try:
+         r = get(url, stream=True)
+      except:
+         return
       with open(filepath, 'wb') as fd:
          for chunk in r.iter_content(chunk_size=1024):
             fd.write(chunk)
@@ -103,7 +106,7 @@ class CoreUtils(object):
             except:
                pass
       except:
-         raise ValueError
+         return
       
       self.df.iloc[index,3] = int(time())
       self.df.iloc[index,4] = filepath
@@ -117,7 +120,6 @@ class CoreUtils(object):
       returns name of new file and its filepath. If downloaded is a zip, it will extract it and then
       return the path to the folder along with the name of the folder.
       '''
-
       files_in_directory = len(next(os.walk(save_path),(None, None, []))[2])
       dir_name = os.path.basename(save_path)
       num_ = len([i for i,j in enumerate(dir_name) if j == '_'])
@@ -236,12 +238,18 @@ class CoreUtils(object):
             current_idx += idx
 
             for thread in downloads:
-               thread.start()
+               try:
+                  thread.start()
+               except:
+                  pass
 
             while len(downloads) > 0:
-               t = downloads.pop()
-               t.join()
-            
+               try:
+                  t = downloads.pop()
+                  t.join()
+               except:
+                  pass
+               
          del current_idx,downloads,t,thread,names,dl_folders
          self.df.to_csv(websites_csv_path,index=False)
          return True
@@ -657,7 +665,7 @@ class GUI(Tk):
 
    def getEntry(self) -> None:
       title = self.entry1.get()
-      if len(title) <= 1:
+      if len(title) < 1:
          print("Entry 1 is too short")
          self.entry1.delete(0,END)
          del title
@@ -672,14 +680,14 @@ class GUI(Tk):
       
       type = self.entry3.get()
       if len(type) <= 0:
-         print("enter type")
+         print("Enter type")
          self.entry3.delete(0,END)
          return
 
       final_entry = (title,link,type)
 
       with open(websites_csv_path,'a') as web:
-         web.write(f'\n{final_entry[0]}, {final_entry[1]}, {final_entry[2]}, {int(time())}, empty')
+         web.write(f'\n{final_entry[0]},{final_entry[1]},{final_entry[2]},{int(time())},empty')
 
       self.entry1.delete(0,END)
       self.entry2.delete(0,END)
