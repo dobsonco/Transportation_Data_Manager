@@ -8,8 +8,8 @@ to a structured local storage location.
 Features
 --------
 
-    - main.py contains two classes, GUI and CoreUtils. Both will return an object when called, neither take any inputs
-    - Within the CoreUtils object there are 12 methods that allow the main loop to work and for the GUI to start and stop it
+    • main.py contains two classes, GUI and CoreUtils. Both will return an object when called, neither take any inputs
+    • Within the CoreUtils object there are 12 methods that allow the main loop to work and for the GUI to start and stop it
         - set_run: Sets self.run to True, this keeps the main method running. Takes no inputs and returns nothing
         - stop_run: Sets self.run to False, this stops autoprocess and main. Takes no inputs and returns nothing
         - set_stopped: Sets self.stopped to False, when main ends, it will set self.stopped to True, which allows the program to exit. Takes no inputs and returns nothing
@@ -22,10 +22,13 @@ Features
         - empty_path_dl_manager: Takes no input, queues batches of download_url_threads.
         - main: This is the main loop. This makes sure that all files and directories exist, downloads any entries in which the path is 'empty'. If the difference between last_checked is greater than a set number, it will download the data and compare the files
         - autoprocess: Locates all csvs, picks 5, automatically generates figures for each column. Takes no input, returns nothing. While running, the GUI will be unresponsive, as both need to run on the main threading
-    - Within the GUI class, there are 8 methods.
+    • Within the GUI class, there are 11 methods.
         - create_monitor: Creates window with spreadsheet, turns spreadsheet button off so you can't make a second+ spreadsheet window.
-        - update_monitor: redraws the spreadsheet to keep it up to datetime. This should be called about every 3 seconds
-        - delete_monitor: deletes monitor and re-activates the spreadsheet button
+            - update_monitor: redraws the spreadsheet to keep it up to datetime. This should be called about every 3 seconds
+            - delete_monitor: deletes monitor and re-activates the spreadsheet button
+        - create_add_window:  Creates window with 3 entries, allows user to add entries that are automatically formatted to websites.csv. Closes main window while open.
+            - getEntry: Extracts text from the entry boxes and adds to websites.csv
+            - delete_add_window: Closes entry window and reopens main window
         - swtich: Because the start and stop buttons are tied together, I just turned the toggle into one function, don't touch this
         - on_start: Starts the main loop from CoreUtils in another thread
         - on_stop: Stops the main loop by changing run to false
