@@ -640,7 +640,7 @@ class GUI(Tk):
          final_entry = (title,link,type)
 
          with open(websites_csv_path,'a') as web:
-            web.write(f'\n{final_entry[0]},{final_entry[1]},{final_entry[2]},{int(time())},empty')
+            web.write(f'{final_entry[0]},{final_entry[1]},{final_entry[2]},{int(time())},empty\n')
 
          self.entry1.delete(0,END)
          self.entry2.delete(0,END)
