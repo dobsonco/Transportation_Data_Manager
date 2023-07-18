@@ -616,26 +616,51 @@ class GUI(Tk):
       '''
       Creates window that allows you to add entries to websites.csv
       '''
+      def createWarning(self: GUI,relx: float,rely: float,text: str) -> None:
+         bad_entry = Text(self.add_frame,wrap=WORD,width=15,height=1,padx=6,pady=5,highlightthickness=0,fg="#FF0000")
+         bad_entry.tag_configure('center',justify='center')
+         bad_entry.insert('1.0',text)
+         bad_entry.tag_add('center',1.0,'end')
+         bad_entry.place(relx=relx, rely=rely, anchor=CENTER)
+         bad_entry.config(state=DISABLED)
+         self.bad_labels.append(bad_entry)
+         if (len(self.bad_labels) >= 4):
+            del self.bad_labels[0]
+         del bad_entry
+
+      def destroyWarnings(self: GUI) -> None:
+         for bad_label in self.bad_labels:
+            try:
+               bad_label.destroy()
+            except:
+               pass
+
       def getEntry(self: GUI) -> None:
          title = self.entry1.get()
-         if len(title) < 1:
-            print("Entry 1 is too short")
+         if len(title) <= 0:
+            createWarning(self,0.3,0.85,'Title Too Short')
             self.entry1.delete(0,END)
             del title
             return
          
+         destroyWarnings(self)
+
          link = self.entry2.get()
          if not self.process.ping(link):
-            print('Link is invalid')
+            createWarning(self,0.5,0.85,'Invalid Link')
             self.entry2.delete(0,END)
             del title,link
             return
          
+         destroyWarnings(self)
+         
          type = self.entry3.get()
          if len(type) <= 0:
-            print("Enter type")
+            createWarning(self,0.7,0.85,'Enter Filetype')
             self.entry3.delete(0,END)
             return
+         
+         destroyWarnings(self)
 
          final_entry = (title,link,type)
 
@@ -645,8 +670,7 @@ class GUI(Tk):
          self.entry1.delete(0,END)
          self.entry2.delete(0,END)
          self.entry3.delete(0,END)
-
-         print(final_entry)
+         
          del final_entry
 
          try:
@@ -655,6 +679,7 @@ class GUI(Tk):
             pass
       
       def delete_add_window(self: GUI) -> None:
+         destroyWarnings(self)
          self.add_win.destroy()
          self.add_button['state'] = 'normal'
          self.deiconify()  
@@ -662,47 +687,49 @@ class GUI(Tk):
       self.on_stop()
       self.withdraw()
 
+      self.bad_labels = []
+
       self.add_win = Toplevel(master=self,bg='#D3D3D3')
       self.add_win.protocol("WM_DELETE_WINDOW",lambda: delete_add_window(self))
       self.add_win.iconphoto(False,ImageTk.PhotoImage(file=os.path.join(sys_path,'Resources','road-210913_1280.jpg'),format='jpg'))
       self.add_win.title('websites.csv')
       self.add_button['state'] = 'disabled'
 
-      self.add_frame = Frame(self.add_win,height=500,width=300,bg='#D3D3D3')
+      self.add_frame = Frame(self.add_win,height=300,width=900,bg='#D3D3D3')
       self.add_frame.pack()
 
       self.add_label1 = Text(self.add_frame,wrap=WORD,width=15,height=1,padx=6,pady=5,highlightthickness=0)
       self.add_label1.tag_configure('center',justify='center')
       self.add_label1.insert('1.0','''Enter Title''')
       self.add_label1.tag_add('center',1.0,'end')
-      self.add_label1.pack()#place(relx=0.5, rely = 0.05,anchor=CENTER)
+      self.add_label1.place(relx=0.5, rely = 0.07,anchor=CENTER)
       self.add_label1.config(state=DISABLED)
 
       self.entry1 = Entry(self.add_frame,width=90)
-      self.entry1.pack()
+      self.entry1.place(relx=0.5,rely=0.17,anchor=CENTER)
 
       self.add_label2 = Text(self.add_frame,wrap=WORD,width=15,height=1,padx=6,pady=5,highlightthickness=0)
       self.add_label2.tag_configure('center',justify='center')
       self.add_label2.insert('1.0','''Enter Link''')
       self.add_label2.tag_add('center',1.0,'end')
-      self.add_label2.pack()#place(relx=0.5, rely = 0.05,anchor=CENTER)
+      self.add_label2.place(relx=0.5, rely = 0.27,anchor=CENTER)
       self.add_label2.config(state=DISABLED)
 
       self.entry2 = Entry(self.add_frame,width=90)
-      self.entry2.pack()
+      self.entry2.place(relx=0.5, rely = 0.37,anchor=CENTER)
 
       self.add_label3 = Text(self.add_frame,wrap=WORD,width=15,height=1,padx=6,pady=5,highlightthickness=0)
       self.add_label3.tag_configure('center',justify='center')
-      self.add_label3.insert('1.0','''Enter Type''')
+      self.add_label3.insert('1.0','''Enter Filetype''')
       self.add_label3.tag_add('center',1.0,'end')
-      self.add_label3.pack()#place(relx=0.5, rely = 0.05,anchor=CENTER)
+      self.add_label3.place(relx=0.5, rely = 0.47,anchor=CENTER)
       self.add_label3.config(state=DISABLED)
 
       self.entry3 = Entry(self.add_frame,width=90)
-      self.entry3.pack()
+      self.entry3.place(relx=0.5, rely = 0.57,anchor=CENTER)
 
       self.add_entry_button = Button(self.add_frame,text="Add To websites.csv",command=lambda: getEntry(self),padx=6,pady=5,highlightthickness=0)
-      self.add_entry_button.pack()#place(relx=0.5,rely=0.9,anchor=CENTER)
+      self.add_entry_button.place(relx=0.5,rely=0.7,anchor=CENTER)
 
    def create_monitor(self) -> None:
       '''
