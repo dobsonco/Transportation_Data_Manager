@@ -629,6 +629,9 @@ class GUI(Tk):
          del bad_entry
 
       def destroyWarnings(self: GUI) -> None:
+         '''
+         Destroys warning popups
+         '''
          for bad_label in self.bad_labels:
             try:
                bad_label.destroy()
@@ -636,6 +639,9 @@ class GUI(Tk):
                pass
 
       def getEntry(self: GUI) -> None:
+         '''
+         Extracts the text from the entries, creates popups if an input is invalid
+         '''
          title = self.entry1.get()
          if len(title) <= 0:
             createWarning(self,0.3,0.85,'Title Too Short')
@@ -679,6 +685,9 @@ class GUI(Tk):
             pass
       
       def delete_add_window(self: GUI) -> None:
+         '''
+         Deletes add_wwindow and reopens the main window
+         '''
          destroyWarnings(self)
          self.add_win.destroy()
          self.add_button['state'] = 'normal'
