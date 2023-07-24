@@ -37,13 +37,13 @@ class CoreUtils(object):
       self.CheckAgain = int(time() + 1000)
       self.df_changed = False
 
-   def set_run(self):
+   def set_run(self) -> None:
       self.run = True
 
-   def stop_run(self):
+   def stop_run(self) -> None:
       self.run = False
 
-   def set_stopped(self):
+   def set_stopped(self) -> None:
       self.stopped = False
 
    def connected_to_internet(self,timeout: int = 5) -> bool:
@@ -206,7 +206,7 @@ class CoreUtils(object):
       else:
          raise ValueError
       
-   def empty_path_dl_manager(self):
+   def empty_path_dl_manager(self) -> None:
       '''
       Downloads any entries in websites.csv that doesn't have a file location
       '''
@@ -551,53 +551,52 @@ class GUI(Tk):
       self.canvas = Canvas(self.frame, width=425, height=400, bg='#D3D3D3')
       self.canvas.pack()
 
+      self.info_label = Text(self.canvas,wrap=WORD,width=40,height=3,padx=6,pady=5,highlightthickness=0)
+      self.info_label.tag_configure('center',justify='center')
+      self.info_label.insert('1.0','''This rudimentary GUI controls the script. New buttons and features may be added later if I can make it work''')
+      self.info_label.tag_add('center',1.0,'end')
+      self.info_label.place(relx=0.5, rely = 0.12,anchor=CENTER)
+      self.info_label.config(state=DISABLED)
+
       self.start_label = Text(self.canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
       self.start_label.tag_configure('center',justify='center')
       self.start_label.insert('1.0','When pressed, this button will start the loop')
       self.start_label.tag_add('center',1.0,'end')
-      self.start_label.place(relx = 0.35, rely = 0.27,anchor=CENTER)
+      self.start_label.place(relx = 0.35, rely = 0.28,anchor=CENTER)
       self.start_label.config(state= DISABLED)
 
       self.start_button = Button(self.canvas,text="    Start    ",command=self.on_start,padx=6,pady=5,highlightthickness=0)
-      self.start_button.place(relx=0.8,rely=0.27,anchor=CENTER)
+      self.start_button.place(relx=0.8,rely=0.28,anchor=CENTER)
 
       self.end_label = Text(self.canvas,wrap=WORD,width=30,height=2,padx=6,pady=5,highlightthickness=0)
       self.end_label.tag_configure('center',justify='center')
       self.end_label.insert('1.0','When pressed, this button will end the loop')
       self.end_label.tag_add('center',1.0,'end')
-      self.end_label.place(relx = 0.35, rely = 0.40,anchor=CENTER)
+      self.end_label.place(relx = 0.35, rely = 0.41,anchor=CENTER)
       self.end_label.config(state=DISABLED)
 
       self.end_button = Button(self.canvas,text="    Stop    ",command=self.on_stop,padx=6,pady=5,highlightthickness=0)
-      self.end_button.place(relx=0.8,rely=0.40,anchor=CENTER)
+      self.end_button.place(relx=0.8,rely=0.41,anchor=CENTER)
 
       self.monitor_label = Text(self.canvas,wrap=WORD,width=30,height=3,padx=6,pady=5,highlightthickness=0)
       self.monitor_label.tag_configure('center',justify='center')
       self.monitor_label.insert('1.0','This button will create a window with the current spreadsheet')
       self.monitor_label.tag_add('center',1.0,'end')
-      self.monitor_label.place(relx = 0.35, rely = 0.53,anchor=CENTER)
+      self.monitor_label.place(relx = 0.35, rely = 0.56,anchor=CENTER)
       self.monitor_label.config(state=DISABLED)
 
       self.monitor_button = Button(self.canvas,text="Spreadsheet",command=self.create_monitor,padx=6,pady=5,highlightthickness=0)
-      self.monitor_button.place(relx=0.8,rely=0.53,anchor=CENTER)
+      self.monitor_button.place(relx=0.8,rely=0.56,anchor=CENTER)
 
       self.add_label = Text(self.canvas,wrap=WORD,width=30,height=3,padx=6,pady=5,highlightthickness=0)
       self.add_label.tag_configure('center',justify='center')
       self.add_label.insert('1.0','This button will create a window that allows you to enter new websites to track')
       self.add_label.tag_add('center',1.0,'end')
-      self.add_label.place(relx = 0.35, rely = 0.67,anchor=CENTER)
+      self.add_label.place(relx = 0.35, rely = 0.73,anchor=CENTER)
       self.add_label.config(state=DISABLED)
 
       self.add_button = Button(self.canvas,text="Add Entry",command=self.create_add_window,padx=6,pady=5,highlightthickness=0)
-      self.add_button.place(relx=0.8,rely=0.67,anchor=CENTER)
-
-      self.info_label = Text(self.canvas,wrap=WORD,width=30,height=4,padx=6,pady=5,highlightthickness=0)
-      self.info_label.tag_configure('center',justify='center')
-      self.info_label.insert('1.0','''This rudimentary GUI controls the script. 
-         New buttons and features may be added later if I can make it work''')
-      self.info_label.tag_add('center',1.0,'end')
-      self.info_label.place(relx=0.5, rely = 0.12,anchor=CENTER)
-      self.info_label.config(state=DISABLED)
+      self.add_button.place(relx=0.8,rely=0.73,anchor=CENTER)
 
       self.resized_img = Image.open(os.path.join(sys_path,'Resources','UT_logo.png')).resize((130,100),Image.LANCZOS);
       self.img = ImageTk.PhotoImage(self.resized_img)
