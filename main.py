@@ -127,7 +127,14 @@ class CoreUtils(object):
       filepath = os.path.join(save_path,filename)
       del files_in_directory,dir_name,num_,filename
 
-      r = get(url, stream=True)
+
+      if not self.ping(url):
+         raise ConnectionError
+      try:
+         r = get(url, stream=True)
+      except:
+         raise ConnectionError
+
       with open(filepath, 'wb') as fd:
          for chunk in r.iter_content(chunk_size=int((chunk_size))):
             fd.write(chunk)
