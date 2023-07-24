@@ -213,7 +213,7 @@ class CoreUtils(object):
       else:
          raise ValueError
       
-   def empty_path_dl_manager(self) -> None:
+   def empty_path_dl_manager(self) -> bool:
       '''
       Downloads any entries in websites.csv that doesn't have a file location
       '''
@@ -259,6 +259,7 @@ class CoreUtils(object):
                
          del current_idx,downloads,t,thread,names,dl_folders
          self.df.to_csv(websites_csv_path,index=False)
+         window.queue_autoprocess(ms=0,num=20)
          return True
       
    def main(self) -> None:
@@ -412,7 +413,7 @@ class CoreUtils(object):
       print("Exited main thread")
       self.stopped = True
 
-   def autoprocess(self) -> None:
+   def autoprocess(self,num=5) -> None:
       '''
       Horrible Mess of a Function Held together by spit and duct tape
 
@@ -454,7 +455,7 @@ class CoreUtils(object):
             continue
          to_process.append((csv,data_folder,filename))
          del dl_folder
-         if len(to_process) >= 5:
+         if len(to_process) >= num:
             del filename,data_folder,a,b,upper
             break
 
@@ -836,11 +837,11 @@ class GUI(Tk):
       self.process.stop_run()
       self.destroy()
 
-   def queue_autoprocess(self,ms=604800000) -> None:
+   def queue_autoprocess(self,ms=604800000,num=5) -> None:
       '''
       Queues autoprocess to run after a specified time
       '''
-      self.after(ms=ms,func=self.process.autoprocess)
+      self.after(ms=ms,func=lambda: self.process.autoprocess(num=num))
 
 window = GUI()
 window.mainloop()
