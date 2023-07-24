@@ -404,7 +404,6 @@ class CoreUtils(object):
          try:
             if self.df_changed:
                self.df.to_csv(websites_csv_path,index=False)
-            del self.df
          except:
             pass
 
@@ -755,7 +754,10 @@ class GUI(Tk):
          '''
          Redraws the spreadsheet
          '''
-         data = read_csv(websites_csv_path,header=0)
+         try:
+            data = self.process.df.copy()
+         except:
+            data = read_csv(websites_csv_path)
          data = data.reset_index(drop=True)
          data['path'] = data['path'].fillna('empty')
          data['last_checked'] = data['last_checked'].fillna(time())
@@ -765,6 +767,7 @@ class GUI(Tk):
          self.pt.model.df = data
          self.pt.redraw()
          self.monitor.after(2500,lambda: update_monitor(self))
+         del data
 
       def delete_monitor(self: GUI) -> None:
          '''
@@ -782,11 +785,15 @@ class GUI(Tk):
 
       self.f = Frame(self.monitor,height=1000,width=1600,bg='#D3D3D3')
       self.f.pack(fill=BOTH,expand=1)
-      data = read_csv(websites_csv_path,header=0)
+      try:
+         data = self.process.df.copy()
+      except:
+         data = read_csv(websites_csv_path)
       tz = get_localzone()
       data.iloc[:,3] = [datetime.fromtimestamp(unix_timestamp, tz).strftime("%D %H:%M") for unix_timestamp in data.iloc[:,3]]
       self.pt = Table(self.f,dataframe=data,showtoolbar=False,showstatusbar=False)
       self.pt.show()
+      del data
 
       self.monitor.after(ms=5000,func=lambda: update_monitor(self))
 
